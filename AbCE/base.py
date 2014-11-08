@@ -85,3 +85,62 @@ class BaseTransformer(object):
         '''History transformation method'''
         # Push repr(self) onto payload
         return payload + [repr(self)]
+
+
+class Pipeline(object):
+    '''Wrapper which allows multiple transformers to be chained together'''
+
+    def __init__(self, *steps):
+        '''Parameters: one or more tuples of the form (name, TransformerObject).
+
+        :example:
+            >>> P = PitchShift(semitones=5)
+            >>> T = TimeStretch(speed=1.25)
+            >>> Pipe = Pipeline( ('Pitch:maj3', P), ('Speed:1.25x', T) )
+            >>> output = Pipe.transform(data)
+        '''
+
+        self.named_steps = dict(steps)
+        print self.named_steps
+        names, transformers = zip(*steps)
+
+        if len(self.named_steps) != len(steps):
+            raise ValueError("Names provided are not unique: "
+                             " {:s}".format(names,))
+
+        # shallow copy of steps
+        self.steps = list(zip(names, transformers))
+
+        for t in transformers:
+            if not hasattr(t, 'transform'):
+                raise TypeError("All intermediate steps a the chain should "
+                                "derive from the TransformMixin class"
+                                " '{:s}' (type {:s}) doesn't implement "
+                                " transform().".format(t, type(t)))
+
+    def get_params(self):
+        '''Get the parameters for this object.  Returns as a dict.'''
+
+        out = self.named_steps.copy()
+        for name, step in self.named_steps.iteritems():
+            for key, value in step.get_params(deep=True).iteritems():
+                out['{:s}__{:s}'.format(name, key)] = value
+        return out
+
+    def __repr__(self):
+        '''Pretty-print the object'''
+
+        class_name = self.__class__.__name__
+        return '{:s}({:s})'.format(class_name,
+                                   _pprint(self.get_params(),
+                                           offset=len(class_name),),)
+
+    def transform(self, payload):
+        '''Apply the sequence of transformations'''
+
+        output = payload.copy()
+
+        for name, tx in self.steps:
+            output = tx.transform(output)
+
+        return output
