@@ -1,4 +1,4 @@
-abce
+muda
 ====
 
-A library for augmenting annotated audio data
+A library for *Mu*sical *d*ata *a*ugmentation

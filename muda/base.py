@@ -2,6 +2,8 @@
 '''Base module components.'''
 
 import inspect
+import pyjams
+import copy
 from sklearn.base import _pprint
 
 
