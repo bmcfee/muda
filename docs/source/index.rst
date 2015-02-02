@@ -9,8 +9,19 @@ Welcome to muda's documentation!
 Contents:
 
 .. toctree::
-   :maxdepth: 2
+    :maxdepth: 2
 
+.. automodule:: muda.core
+    :members:
+    :imported-members:
+    :undoc-members:
+    :show-inheritance:
+
+.. automodule:: muda.deformers
+    :members:
+    :imported-members:
+    :undoc-members:
+    :show-inheritance:
 
 
 Indices and tables
