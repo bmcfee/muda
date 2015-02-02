@@ -1,0 +1,1 @@
+git+git://github.com/marl/jams.git@pandas

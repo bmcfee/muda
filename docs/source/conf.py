@@ -51,7 +51,7 @@ else:
 class Mock(MagicMock):
     @classmethod
     def __getattr__(cls, name):
-            return Mock()
+        return Mock()
 
 
 # -- Options for HTML output -------------------------------------------------
