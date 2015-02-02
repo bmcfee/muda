@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 '''Base module components.'''
 
-# import copy
+import copy
 
 import inspect
 
@@ -66,40 +66,28 @@ class BaseTransformer(object):
         if not hasattr(jam.sandbox, 'muda'):
             raise RuntimeError('No muda state found in jams sandbox.')
 
-        # If we're iterable, local copies will have to be made
-#         sandbox = copy.deepcopy(jam.sandbox)
+        # We'll need a working copy of this object for modification purposes
+        jam_working = copy.deepcopy(jam)
 
         # Push repr(self) onto the history stack
-        jam.sandbox.muda['history'].append(repr(self))
+        jam_working.sandbox.muda['history'].append(repr(self))
 
         if hasattr(self, 'audio'):
-            y, sr = self.audio(jam.sandbox.muda['y'],
-                               jam.sandbox.muda['sr'])
-            jam.sandbox.muda['y'] = y
-            jam.sandbox.muda['sr'] = sr
-
-#         annotations = copy.deepcopy(jam.annotations)
+            self.audio(jam_working.sandbox)
 
         for query, function in six.iteritems(self.dispatch):
-            for matched_annotation in jam.search(namespace=query):
+            for matched_annotation in jam_working.search(namespace=query):
                 function(matched_annotation)
 
-        return jam
-
-        # Undo the damage of this deformation stage
-#         jam.sandbox = sandbox
-#         jam.annotations = annotations
+        return jam_working
 
     def count_deformers(self):
         '''Verify that at most 1 deformer is a generator'''
 
-        n_generators = 0
-        for function in six.itervalues(self.dispatch):
-            if inspect.isgeneratorfunction(function):
-                n_generators += 1
-
-        if n_generators > 0:
-            raise RuntimeError('At most no deformations can be generator.')
+        n_generators = len(filter(inspect.isgeneratorfunction,
+                                  six.itervalues(self.dispatch)))
+        if n_generators > 1:
+            raise RuntimeError('At most one deformation can be generator.')
 
         return n_generators
 
