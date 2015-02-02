@@ -1,10 +1,13 @@
 #!/usr/bin/env python
 '''Base module components.'''
 
+# import copy
+
 import inspect
-import pyjams
-import copy
+
 from sklearn.base import _pprint
+
+import six
 
 
 class BaseTransformer(object):
@@ -22,7 +25,7 @@ class BaseTransformer(object):
         if init is object.__init__:
             return []
 
-        args, varargs, kw, default = inspect.getargspec(init)
+        args, varargs = inspect.getargspec(init)[:2]
 
         if varargs is not None:
             raise RuntimeError('varargs ist verboten')
@@ -53,40 +56,52 @@ class BaseTransformer(object):
                                    _pprint(self.get_params(deep=False),
                                            offset=len(class_name),),)
 
-    def transform(self, payload, top_level=True):
-        '''Recursive transformation function.
+    def __init__(self):
+        '''Base-class initialization'''
+        self.dispatch = dict()
 
-        For each key in the payload object, we search for an appropriate
-        transformation method, and apply it if found.
+    def transform(self, jam):
+        '''Apply the transformation to audio and annotations.'''
 
-        If no transformer can be found, but the corresponding value is
-        a dictionary, the method recurses.
+        if not hasattr(jam.sandbox, 'muda'):
+            raise RuntimeError('No muda state found in jams sandbox.')
 
-        An additional 'history' field may be appended at the top level to
-        track the series of modifications applied from the original.
-        '''
+        # If we're iterable, local copies will have to be made
+#         sandbox = copy.deepcopy(jam.sandbox)
 
-        output = payload.copy()
+        # Push repr(self) onto the history stack
+        jam.sandbox.muda['history'].append(repr(self))
 
-        if top_level:
-            output.setdefault('history', [])
+        if hasattr(self, 'audio'):
+            y, sr = self.audio(jam.sandbox.muda['y'],
+                               jam.sandbox.muda['sr'])
+            jam.sandbox.muda['y'] = y
+            jam.sandbox.muda['sr'] = sr
 
-        for key, value in output.iteritems():
+#         annotations = copy.deepcopy(jam.annotations)
 
-            tx_func_name = '_{:s}'.format(key)
+        for query, function in six.iteritems(self.dispatch):
+            for matched_annotation in jam.search(namespace=query):
+                function(matched_annotation)
 
-            if hasattr(self, tx_func_name):
-                output[key] = getattr(self, tx_func_name)(value)
+        return jam
 
-            elif isinstance(value, dict):
-                output[key] = self.transform(value, top_level=False)
+        # Undo the damage of this deformation stage
+#         jam.sandbox = sandbox
+#         jam.annotations = annotations
 
-        return output
+    def count_deformers(self):
+        '''Verify that at most 1 deformer is a generator'''
 
-    def _history(self, payload):
-        '''History transformation method'''
-        # Push repr(self) onto payload
-        return payload + [repr(self)]
+        n_generators = 0
+        for function in six.itervalues(self.dispatch):
+            if inspect.isgeneratorfunction(function):
+                n_generators += 1
+
+        if n_generators > 0:
+            raise RuntimeError('At most no deformations can be generator.')
+
+        return n_generators
 
 
 class Pipeline(object):
