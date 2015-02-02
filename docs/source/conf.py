@@ -59,7 +59,7 @@ class Mock(MagicMock):
 on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
 if on_rtd:
     html_theme = 'default'
-    MOCK_MODULES = ['argparse', 'numpy', 'librosa', 'pyjams', 'pandas']
+    MOCK_MODULES = ['argparse', 'numpy', 'librosa', 'pyjams', 'pandas', 'numpydoc']
     sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
 else:
     html_theme = 'nature'
