@@ -86,10 +86,18 @@ class BaseTransformer(object):
 
         n_generators = len(filter(inspect.isgeneratorfunction,
                                   six.itervalues(self.dispatch)))
+
         if n_generators > 1:
             raise RuntimeError('At most one deformation can be generator.')
 
         return n_generators
+
+    @property
+    def __json__(self):
+        '''Serializer'''
+
+        return dict(name=self.__class__.__name__,
+                    params=self.get_params())
 
 
 class Pipeline(object):
