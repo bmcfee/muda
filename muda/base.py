@@ -60,9 +60,12 @@ class BaseTransformer(object):
         '''Base-class initialization'''
         self.dispatch = dict()
 
+        # A cache for shared state among deformation objects
+        self._state = dict()
+
     def transform(self, jam):
         '''Apply the transformation to audio and annotations.
-        
+
         The input jam is copied and modified, and returned
         contained in a list.
 
@@ -130,8 +133,6 @@ class IterTransformer(BaseTransformer):
 
         self.n_samples = n_samples
 
-        # A cache for shared state among deformation objects
-        self._state = {}
 
     def transform(self, jam):
         '''Iterative transformations'''

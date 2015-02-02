@@ -4,3 +4,4 @@
 '''Implementations of augmentation classes'''
 
 from .time import *
+from .pitch import *
