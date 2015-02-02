@@ -44,7 +44,7 @@ class TimeStretch(BaseTransformer):
     def deform_tempo(self, annotation):
         '''Deform a tempo annotation'''
 
-        annotation.data.value /= self.rate
+        annotation.data.value *= self.rate
 
     def deform_times(self, annotation):
         '''Deform time values for all annotations.'''
@@ -94,7 +94,7 @@ class RandomTimeStretch(IterTransformer):
     def deform_tempo(self, annotation):
         '''Deform a tempo annotation'''
 
-        annotation.data.value /= self._state['rate']
+        annotation.data.value *= self._state['rate']
 
     def deform_times(self, annotation):
         '''Deform time values for all annotations.'''
