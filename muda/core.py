@@ -35,23 +35,30 @@ def jam_pack(jam, **kwargs):
     return jam
 
 
-def jam_del(jam, *keys):
+def jam_pop(jam, *keys):
     '''Remove specified keys from the jams muda sandbox.
 
     Parameters
     ----------
     keys : one or more positional arguments
         Keys to be purged from the sandbox
+
+    Returns
+    -------
+    values : dict
+        Dictionary containing the popped values
     '''
 
     if not hasattr(jam.sandbox, 'muda'):
         warnings.warn('No muda sandbox found in jam')
         return
 
-    for key in keys:
-        jam.sandbox.muda.pop(key)
+    output = {}
 
-    return jam
+    for key in keys:
+        output[key] = jam.sandbox.muda.pop(key)
+
+    return output
 
 
 def load_jam_audio(jam_in, audio_file, **kwargs):
