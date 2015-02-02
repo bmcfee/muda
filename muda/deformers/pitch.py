@@ -4,7 +4,6 @@
 '''Pitch deformation algorithms'''
 
 import librosa
-import pandas as pd
 import re
 
 from ..base import BaseTransformer, IterTransformer
@@ -93,3 +92,11 @@ class PitchShift(BaseTransformer):
 
         annotation.data.values = [self.transpose(l)
                                   for l in annotation.data.values]
+
+
+class RandomPitchShift(IterTransformer):
+    '''Randomized pitch shifter'''
+    def __init__(self, n_samples, mean=0.0, sigma=1.0):
+        '''Randomized pitch shifting'''
+
+        raise NotImplemented()

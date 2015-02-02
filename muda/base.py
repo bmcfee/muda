@@ -171,11 +171,15 @@ class Pipeline(object):
         self.steps = list(zip(names, transformers))
 
         for t in transformers:
-            if not hasattr(t, 'transform'):
-                raise TypeError("All intermediate steps a the chain should "
-                                "derive from the TransformMixin class"
-                                " '{:s}' (type {:s}) doesn't implement "
-                                " transform().".format(t, type(t)))
+            if not isinstance(t, BaseTransformer):
+                raise TypeError('{:s} is not of type BaseTransformer')
+
+    @property
+    def __json__(self):
+        '''Serialize the pipeline'''
+
+        return dict(name=self.__class__.__name__,
+                    params=[(name, t.__json__) for (name, t) in self.steps])
 
     def get_params(self):
         '''Get the parameters for this object.  Returns as a dict.'''
@@ -194,12 +198,19 @@ class Pipeline(object):
                                    _pprint(self.get_params(),
                                            offset=len(class_name),),)
 
-    def transform(self, payload):
-        '''Apply the sequence of transformations'''
+    def __recursive_transform(self, jam, steps):
+        '''A recursive transformation pipeline'''
 
-        output = payload.copy()
+        if len(steps) > 0:
+            head_transformer = steps[0][1]
+            for t_jam in head_transformer.transform(jam):
+                for q in self.__recursive_transform(t_jam, steps[1:]):
+                    yield q
+        else:
+            yield jam
 
-        for name, tx in self.steps:
-            output = tx.transform(output)
+    def transform(self, jam):
+        '''Apply the sequence of transformations to a single jam object'''
 
-        return output
+        for output in self.__recursive_transform(jam, self.steps):
+            yield output
