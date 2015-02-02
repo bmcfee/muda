@@ -61,7 +61,25 @@ class BaseTransformer(object):
         self.dispatch = dict()
 
     def transform(self, jam):
-        '''Apply the transformation to audio and annotations.'''
+        '''Apply the transformation to audio and annotations.
+        
+        The input jam is copied and modified, and returned
+        contained in a list.
+
+        Parameters
+        ----------
+        jam : MUDA augmented pyjams.JAMS
+
+
+        Returns
+        -------
+        jam_list : list
+            A length-1 list containing `jam` after transformation
+
+        See also
+        --------
+        muda.load_jam_audio
+        '''
 
         if not hasattr(jam.sandbox, 'muda'):
             raise RuntimeError('No muda state found in jams sandbox.')
@@ -81,7 +99,7 @@ class BaseTransformer(object):
             for matched_annotation in jam_working.search(namespace=query):
                 function(matched_annotation)
 
-        return jam_working
+        return [jam_working]
 
     @property
     def __json__(self):
@@ -113,7 +131,7 @@ class IterTransformer(BaseTransformer):
         self.n_samples = n_samples
 
         # A cache for shared state among deformation objects
-        self.__state = {}
+        self._state = {}
 
     def transform(self, jam):
         '''Iterative transformations'''
@@ -122,9 +140,10 @@ class IterTransformer(BaseTransformer):
         i = 0
         while self.n_samples is None or i < self.n_samples:
             # Reset the state
-            self.__state = {}
-            yield BaseTransformer.transform(self, jam)
-            i += 1
+            self._state = {}
+            for jam_out in BaseTransformer.transform(self, jam):
+                yield jam_out
+                i += 1
 
 
 class Pipeline(object):
