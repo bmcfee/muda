@@ -23,7 +23,7 @@ def jam_pack(jam, **kwargs):
 
     >>> y, sr = librosa.load(librosa.util.example_audio_file())
     >>> jam = pyjams.JAMS()
-    >>> muda.jampack(jam, y=y, sr=sr)
+    >>> muda.jam_pack(jam, y=y, sr=sr)
     >>> print muda
     '''
 

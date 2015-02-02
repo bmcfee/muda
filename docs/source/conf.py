@@ -14,6 +14,7 @@
 
 import sys
 import os
+import six
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -30,6 +31,7 @@ sys.path.insert(0, os.path.abspath('../../muda'))
 # ones.
 extensions = [
     'sphinx.ext.autodoc',
+    'sphinx.ext.autosummary',
     'sphinx.ext.doctest',
     'sphinx.ext.intersphinx',
     'sphinx.ext.todo',
@@ -39,6 +41,32 @@ extensions = [
     'sphinx.ext.viewcode',
     'numpydoc',
 ]
+
+if six.PY3:
+    from unittest.mock import MagicMock
+else:
+    from mock import Mock as MagicMock
+
+
+class Mock(MagicMock):
+    @classmethod
+    def __getattr__(cls, name):
+            return Mock()
+
+
+# -- Options for HTML output -------------------------------------------------
+
+
+on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
+if on_rtd:
+    html_theme = 'default'
+    MOCK_MODULES = ['argparse', 'numpy', 'librosa', 'pyjams', 'pandas']
+    sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
+else:
+    html_theme = 'nature'
+
+# The theme to use for HTML and HTML Help pages.  See the documentation for
+# a list of builtin themes.
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']

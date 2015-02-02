@@ -35,7 +35,18 @@ class BaseTransformer(object):
         return args
 
     def get_params(self, deep=True):
-        '''Get the parameters for this object.  Returns as a dict.'''
+        '''Get the parameters for this object.  Returns as a dict.
+
+        Parameters
+        ----------
+        deep : bool
+            Recurse on nested objects
+
+        Returns
+        -------
+        params : dict
+            A dictionary containing all parameters for this object
+        '''
 
         out = dict()
 
@@ -71,8 +82,8 @@ class BaseTransformer(object):
 
         Parameters
         ----------
-        jam : MUDA augmented pyjams.JAMS
-
+        jam : pyjams.JAMS
+            A single jam object to modify
 
         Returns
         -------
@@ -81,7 +92,7 @@ class BaseTransformer(object):
 
         See also
         --------
-        muda.load_jam_audio
+        core.load_jam_audio
         '''
 
         if not hasattr(jam.sandbox, 'muda'):
@@ -133,9 +144,26 @@ class IterTransformer(BaseTransformer):
 
         self.n_samples = n_samples
 
-
     def transform(self, jam):
-        '''Iterative transformations'''
+        '''Iterative transformation generator
+
+        Generates up to a fixed number of transformed jams
+        from a single input.
+
+        Parameters
+        ----------
+        jam : pyjams.JAMS
+            The jam to transform
+
+        Generates
+        ---------
+        jam_out : pyjams.JAMS
+            Iterator of transformed jams
+
+        See also
+        --------
+        BaseTransformer.transform
+        '''
 
         # Apply the transformation up to n_samples times
         i = 0
@@ -151,13 +179,22 @@ class Pipeline(object):
     '''Wrapper which allows multiple transformers to be chained together'''
 
     def __init__(self, *steps):
-        '''Parameters: one or more tuples of the form (name, TransformerObject).
+        '''Transformation pipeline.
 
-        :example:
-            >>> P = PitchShift(semitones=5)
-            >>> T = TimeStretch(speed=1.25)
-            >>> Pipe = Pipeline( ('Pitch:maj3', P), ('Speed:1.25x', T) )
-            >>> output = Pipe.transform(data)
+        A given JAMS object will be transformed sequentially by
+        each stage of the pipeline.
+
+        Parameters
+        ----------
+        steps : argument array
+            steps[i] is a tuple of `(name, Transformer)`
+
+        Examples
+        --------
+        >>> P = muda.deformers.PitchShift(semitones=5)
+        >>> T = muda.deformers.TimeStretch(speed=1.25)
+        >>> Pipe = Pipeline( ('Pitch:maj3', P), ('Speed:1.25x', T) )
+        >>> output = Pipe.transform(data)
         '''
 
         self.named_steps = dict(steps)
@@ -210,7 +247,21 @@ class Pipeline(object):
             yield jam
 
     def transform(self, jam):
-        '''Apply the sequence of transformations to a single jam object'''
+        '''Apply the sequence of transformations to a single jam object.
+
+        Parameters
+        ----------
+        jam : pyjams.JAMS
+            The jam object to transform
+
+        Generates
+        ---------
+        jam_stream : iterable
+
+        See also
+        --------
+        BaseTransformer.transform
+        '''
 
         for output in self.__recursive_transform(jam, self.steps):
             yield output
