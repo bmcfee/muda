@@ -69,28 +69,19 @@ class BaseTransformer(object):
         # We'll need a working copy of this object for modification purposes
         jam_working = copy.deepcopy(jam)
 
-        # Push repr(self) onto the history stack
-        jam_working.sandbox.muda['history'].append(repr(self))
+        # Push our reconstructor onto the history stack
+        jam_working.sandbox.muda['history'].append(self.__json__)
 
         if hasattr(self, 'audio'):
-            self.audio(jam_working.sandbox)
+            self.audio(jam_working.sandbox.muda,
+                       jam_working.file_metadata)
 
+        # Walk over the list of deformers
         for query, function in six.iteritems(self.dispatch):
             for matched_annotation in jam_working.search(namespace=query):
                 function(matched_annotation)
 
         return jam_working
-
-    def count_deformers(self):
-        '''Verify that at most 1 deformer is a generator'''
-
-        n_generators = len(filter(inspect.isgeneratorfunction,
-                                  six.itervalues(self.dispatch)))
-
-        if n_generators > 1:
-            raise RuntimeError('At most one deformation can be generator.')
-
-        return n_generators
 
     @property
     def __json__(self):
@@ -98,6 +89,42 @@ class BaseTransformer(object):
 
         return dict(name=self.__class__.__name__,
                     params=self.get_params())
+
+
+class IterTransformer(BaseTransformer):
+    '''Base class for stochastic or sequential transformations.
+    If your transformation can generate multiple versions of a single input,
+    (eg, by sampling multiple times), then this is for you.'''
+
+    def __init__(self, n_samples):
+        '''Iterative transformation objects can generate
+        multiple outputs from each input.
+
+        Parameters
+        ----------
+        n_samples : int or None
+            Maximum number of samples to generate.
+            If None, run indefinitely.
+
+        '''
+
+        BaseTransformer.__init__(self)
+
+        self.n_samples = n_samples
+
+        # A cache for shared state among deformation objects
+        self.__state = {}
+
+    def transform(self, jam):
+        '''Iterative transformations'''
+
+        # Apply the transformation up to n_samples times
+        i = 0
+        while self.n_samples is None or i < self.n_samples:
+            # Reset the state
+            self.__state = {}
+            yield BaseTransformer.transform(self, jam)
+            i += 1
 
 
 class Pipeline(object):
@@ -114,7 +141,6 @@ class Pipeline(object):
         '''
 
         self.named_steps = dict(steps)
-        print self.named_steps
         names, transformers = zip(*steps)
 
         if len(self.named_steps) != len(steps):
