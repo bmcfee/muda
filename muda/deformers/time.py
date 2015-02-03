@@ -12,6 +12,102 @@ from ..base import BaseTransformer, IterTransformer
 __all__ = ['TimeStretch', 'RandomTimeStretch']
 
 
+def deform_tempo(annotation, rate):
+    '''Deform tempo annotation object by a specified rate.
+
+    Parameters
+    ----------
+    annotation : pyjams.Annotation
+        An annotation object for tempo measurements.
+
+    rate : float > 0
+        The speedup rate.
+
+    Returns
+    -------
+    None
+        `annotation` is modified in-place.
+
+    Raises
+    ------
+    ValueError
+        if rate <= 0
+    '''
+
+    if rate <= 0:
+        raise ValueError('Time stretch rate must '
+                         'be strictly positive')
+
+    annotation.data.value *= rate
+
+
+def deform_time(annotation, rate):
+    '''Deform annotation object by a specified rate.
+
+    This scales all time and duration values by rate.
+
+    Parameters
+    ----------
+    annotation : pyjams.Annotation
+        An annotation object
+
+    rate : float > 0
+        The speedup rate.
+
+    Returns
+    -------
+    None
+        `annotation` is modified in-place.
+
+    Raises
+    ------
+    ValueError
+        if rate <= 0
+    '''
+
+    if rate <= 0:
+        raise ValueError('Time stretch rate must '
+                         'be strictly positive')
+
+    annotation.data.time = [pd.to_timedelta(x.total_seconds() / rate,
+                                            unit='s')
+                            for x in annotation.data.time]
+
+    annotation.data.duration = [pd.to_timedelta(x.total_seconds() / rate,
+                                                unit='s')
+                                for x in annotation.data.duration]
+
+
+def deform_audio(y, rate):
+    '''Time-stretch an audio signal by a speedup
+
+    Parameters
+    ----------
+    y : np.ndarray [shape=(t,)]
+        Audio time series
+
+    rate : float > 0
+        The speedup rate
+
+    Returns
+    -------
+    y_speedup : np.ndarray
+        The time-stretched audio buffer
+
+    Raises
+    ------
+    ValueError
+        if rate <= 0
+
+    '''
+
+    if rate <= 0:
+        raise ValueError('Time stretch rate must '
+                         'be strictly positive')
+
+    return librosa.effects.time_stretch(y, rate)
+
+
 class TimeStretch(BaseTransformer):
     '''Static time stretching by a fixed rate'''
     def __init__(self, rate):
@@ -37,25 +133,18 @@ class TimeStretch(BaseTransformer):
 
     def audio(self, mudabox, metadata):
         '''Deform the audio and metadata'''
-        mudabox['y'] = librosa.effects.time_stretch(mudabox['y'], self.rate)
-
-        #metadata.duration /= self.rate
+        mudabox['y'] = deform_audio(mudabox['y'], self.rate)
+        # metadata.duration /= self.rate
 
     def deform_tempo(self, annotation):
         '''Deform a tempo annotation'''
 
-        annotation.data.value *= self.rate
+        deform_tempo(annotation, self.rate)
 
     def deform_times(self, annotation):
         '''Deform time values for all annotations.'''
 
-        annotation.data.time = [pd.to_timedelta(x.total_seconds() / self.rate,
-                                                unit='s')
-                                for x in annotation.data.time]
-
-        annotation.data.duration = [pd.to_timedelta(x.total_seconds() / self.rate,
-                                                    unit='s')
-                                    for x in annotation.data.duration]
+        deform_time(annotation, self.rate)
 
 
 class RandomTimeStretch(IterTransformer):
@@ -86,23 +175,15 @@ class RandomTimeStretch(IterTransformer):
                                                   sigma=self.scale,
                                                   size=None)
 
-        mudabox['y'] = librosa.effects.time_stretch(mudabox['y'],
-                                                    self._state['rate'])
-
+        mudabox['y'] = deform_audio(mudabox['y'], self._state['rate'])
         # metadata.duration /= self._state['rate']
 
     def deform_tempo(self, annotation):
         '''Deform a tempo annotation'''
 
-        annotation.data.value *= self._state['rate']
+        deform_tempo(annotation, self._state['rate'])
 
     def deform_times(self, annotation):
         '''Deform time values for all annotations.'''
 
-        annotation.data.time = [pd.to_timedelta(x.total_seconds() / self._state['rate'],
-                                                unit='s')
-                                for x in annotation.data.time]
-
-        annotation.data.duration = [pd.to_timedelta(x.total_seconds() / self._state['rate'],
-                                                    unit='s')
-                                    for x in annotation.data.duration]
+        deform_time(annotation, self._state['rate'])
