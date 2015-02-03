@@ -131,10 +131,13 @@ class TimeStretch(BaseTransformer):
         self.dispatch['.*'] = self.deform_times
         self.dispatch['tempo'] = self.deform_tempo
 
-    def audio(self, mudabox, metadata):
+    def audio(self, mudabox):
         '''Deform the audio and metadata'''
         mudabox['y'] = deform_audio(mudabox['y'], self.rate)
-        # metadata.duration /= self.rate
+
+    def file_metadata(self, metadata):
+        '''Deform the metadata'''
+        metadata.duration /= self.rate
 
     def deform_tempo(self, annotation):
         '''Deform a tempo annotation'''
@@ -168,7 +171,7 @@ class RandomTimeStretch(IterTransformer):
         self.dispatch['.*'] = self.deform_times
         self.dispatch['tempo'] = self.deform_tempo
 
-    def audio(self, mudabox, metadata):
+    def audio(self, mudabox):
         '''Deform the audio and metadata'''
 
         self._state['rate'] = np.random.lognormal(mean=self.location,
@@ -176,7 +179,10 @@ class RandomTimeStretch(IterTransformer):
                                                   size=None)
 
         mudabox['y'] = deform_audio(mudabox['y'], self._state['rate'])
-        # metadata.duration /= self._state['rate']
+
+    def file_metadata(self, metadata):
+        '''Deform the metadata'''
+        metadata.duration /= self._state['rate']
 
     def deform_tempo(self, annotation):
         '''Deform a tempo annotation'''

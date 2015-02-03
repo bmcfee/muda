@@ -70,7 +70,7 @@ class PitchShift(BaseTransformer):
         self.dispatch['chord_harte'] = self.deform_chord
         self.dispatch['melody_hz'] = self.deform_frequency
 
-    def audio(self, mudabox, *args):
+    def audio(self, mudabox):
         '''Deform the audio'''
 
         # First, estimate the original tuning
@@ -89,7 +89,6 @@ class PitchShift(BaseTransformer):
         shift = 2.0 ** (self.n_steps / self.bins_per_octave)
 
         annotation.data.value *= shift
-
 
     def deform_chord(self, annotation):
         '''Deform chord annotations'''
@@ -142,7 +141,7 @@ class RandomPitchShift(IterTransformer):
         self.dispatch['chord_harte'] = self.deform_chord
         self.dispatch['melody_hz'] = self.deform_frequency
 
-    def audio(self, mudabox, *args):
+    def audio(self, mudabox):
         '''Deform the audio'''
 
         # Sample the deformation

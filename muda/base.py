@@ -105,8 +105,10 @@ class BaseTransformer(object):
         jam_working.sandbox.muda['history'].append(self.__json__)
 
         if hasattr(self, 'audio'):
-            self.audio(jam_working.sandbox.muda,
-                       jam_working.file_metadata)
+            self.audio(jam_working.sandbox.muda)
+
+        if hasattr(self, 'metadata'):
+            self.metadata(jam_working.file_metadata)
 
         # Walk over the list of deformers
         for query, function in six.iteritems(self.dispatch):
