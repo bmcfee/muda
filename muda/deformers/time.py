@@ -9,7 +9,7 @@ import pandas as pd
 
 from ..base import BaseTransformer
 
-__all__ = ['TimeStretch', 'RandomTimeStretch']
+__all__ = ['TimeStretch', 'RandomTimeStretch', 'AnnotationBlur']
 
 
 class AbstractTimeStretch(BaseTransformer):
@@ -109,3 +109,83 @@ class RandomTimeStretch(AbstractTimeStretch):
         return dict(rate=np.random.lognormal(mean=self.location,
                                              sigma=self.scale,
                                              size=None))
+
+
+class AnnotationBlur(BaseTransformer):
+    '''Randomly perturb the timing of observations.'''
+
+    def __init__(self, n_samples, mean=0.0, sigma=1.0,
+                 time=True, duration=False):
+        '''Randomly perturb the timing of observations in a JAMS annotation.
+
+        Parameters
+        ----------
+        n_samples : int > 0 or None
+            The number of perturbations to generate
+
+        mean : float
+        sigma: float > 0
+            The mean and standard deviation of timing noise
+
+        time : bool
+        duration : bool
+            Whether to perturb `time` or `duration` fields.
+            Note that duration fields may change near the end of the track,
+            even when `duration` is false, in order to ensure that
+            `time + duration <= track_duration`.
+        '''
+
+        BaseTransformer.__init__(self)
+
+        if sigma <= 0:
+            raise ValueError('sigma must be strictly positive')
+
+        if not (n_samples > 0 or n_samples is None):
+            raise ValueError('n_samples must be None or positive')
+
+        self.n_samples = n_samples
+        self.mean = float(mean)
+        self.sigma = float(sigma)
+        self.time = time
+        self.duration = duration
+
+        self.dispatch['.*'] = self.deform_annotation
+
+    def get_state(self, jam):
+        '''Get the state information from the jam'''
+
+        state = BaseTransformer.get_state(self, jam)
+
+        state['duration'] = librosa.get_duration(y=jam.sandbox.muda['y'],
+                                                 sr=jam.sandbox.muda['sr'])
+
+        return state
+
+    def deform_annotation(self, annotation):
+        '''Deform the annotation'''
+
+        track_duration = self._state['duration']
+
+        # Get the time in seconds
+        t = np.asarray([x.total_seconds() for x in annotation.data.time])
+        if self.time:
+            # Deform
+            t += np.random.normal(loc=self._state['mean'],
+                                  scale=self._state['sigma'],
+                                  size=t.shape)
+
+        # Clip to the track duration
+        t = np.clip(t, 0, track_duration)
+        annotation.data.time = pd.to_timedelta(t, unit='s')
+
+        # Get the time in seconds
+        d = np.asarray([x.total_seconds() for x in annotation.data.duration])
+        if self.duration:
+            # Deform
+            d += np.random.normal(loc=self._state['mean'],
+                                  scale=self._state['sigma'],
+                                  size=d.shape)
+
+        # Clip to the track duration - interval start
+        d = [np.clip(d_i, 0, track_duration - t_i) for (d_i, t_i) in zip(d, t)]
+        annotation.data.duration = pd.to_timedelta(d, unit='s')
