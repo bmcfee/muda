@@ -5,3 +5,4 @@
 
 from .time import *
 from .pitch import *
+from .util import *
