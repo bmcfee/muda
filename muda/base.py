@@ -5,6 +5,7 @@ import copy
 
 import inspect
 
+from contextlib import contextmanager
 from sklearn.base import _pprint
 
 import six
@@ -70,11 +71,21 @@ class BaseTransformer(object):
     def __init__(self):
         '''Base-class initialization'''
         self.dispatch = dict()
-
-        # A cache for shared state among deformation objects
         self._state = dict()
 
-    def transform(self, jam):
+        self.n_samples = 1
+
+    def get_state(self):
+        '''Build the state object for a static transformer'''
+        return self.get_params()
+
+    @contextmanager
+    def _transform_state(self):
+        '''Initialize state for static transformers.'''
+        self._state = self.get_state()
+        yield
+
+    def _transform(self, jam):
         '''Apply the transformation to audio and annotations.
 
         The input jam is copied and modified, and returned
@@ -104,47 +115,22 @@ class BaseTransformer(object):
         # Push our reconstructor onto the history stack
         jam_working.sandbox.muda['history'].append(self.__json__)
 
-        if hasattr(self, 'audio'):
-            self.audio(jam_working.sandbox.muda)
+        with self._transform_state():
+            # Push the specific state of this transformation
+            jam_working.sandbox.muda['state'].append(self._state)
 
-        if hasattr(self, 'metadata'):
-            self.metadata(jam_working.file_metadata)
+            if hasattr(self, 'audio'):
+                self.audio(jam_working.sandbox.muda)
 
-        # Walk over the list of deformers
-        for query, function in six.iteritems(self.dispatch):
-            for matched_annotation in jam_working.search(namespace=query):
-                function(matched_annotation)
+            if hasattr(self, 'metadata'):
+                self.metadata(jam_working.file_metadata)
+
+            # Walk over the list of deformers
+            for query, function in six.iteritems(self.dispatch):
+                for matched_annotation in jam_working.search(namespace=query):
+                    function(matched_annotation)
 
         return [jam_working]
-
-    @property
-    def __json__(self):
-        '''Serializer'''
-
-        return dict(name=self.__class__.__name__,
-                    params=self.get_params())
-
-
-class IterTransformer(BaseTransformer):
-    '''Base class for stochastic or sequential transformations.
-    If your transformation can generate multiple versions of a single input,
-    (eg, by sampling multiple times), then this is for you.'''
-
-    def __init__(self, n_samples):
-        '''Iterative transformation objects can generate
-        multiple outputs from each input.
-
-        Parameters
-        ----------
-        n_samples : int or None
-            Maximum number of samples to generate.
-            If None, run indefinitely.
-
-        '''
-
-        BaseTransformer.__init__(self)
-
-        self.n_samples = n_samples
 
     def transform(self, jam):
         '''Iterative transformation generator
@@ -161,20 +147,20 @@ class IterTransformer(BaseTransformer):
         ---------
         jam_out : pyjams.JAMS
             Iterator of transformed jams
-
-        See also
-        --------
-        BaseTransformer.transform
         '''
 
-        # Apply the transformation up to n_samples times
         i = 0
         while self.n_samples is None or i < self.n_samples:
-            # Reset the state
-            self._state = {}
-            for jam_out in BaseTransformer.transform(self, jam):
+            for jam_out in self._transform(jam):
                 yield jam_out
-                i += 1
+                i = i + 1
+
+    @property
+    def __json__(self):
+        '''Serializer'''
+
+        return dict(name=self.__class__.__name__,
+                    params=self.get_params())
 
 
 class Pipeline(object):

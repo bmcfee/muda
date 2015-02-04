@@ -28,7 +28,7 @@ def jam_pack(jam, **kwargs):
     '''
 
     if not hasattr(jam.sandbox, 'muda'):
-        jam.sandbox.muda = dict(history=[])
+        jam.sandbox.muda = dict(history=[], state=[])
 
     jam.sandbox.muda.update(kwargs)
 
