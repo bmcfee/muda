@@ -112,12 +112,10 @@ class BaseTransformer(object):
         # We'll need a working copy of this object for modification purposes
         jam_working = copy.deepcopy(jam)
 
-        # Push our reconstructor onto the history stack
-        jam_working.sandbox.muda['history'].append(self.__json__)
-
         with self._transform_state():
-            # Push the specific state of this transformation
-            jam_working.sandbox.muda['state'].append(self._state)
+            # Push our reconstructor onto the history stack
+            jam_working.sandbox.muda['history'].append({'transformer': self.__json__,
+                                                        'state': self._state})
 
             if hasattr(self, 'audio'):
                 self.audio(jam_working.sandbox.muda)
