@@ -16,7 +16,11 @@ class AbstractTimeStretch(BaseTransformer):
     '''Abstract base class for time stretching'''
 
     def __init__(self):
-        '''
+        '''Abstract base class for time stretching.
+
+        This contains the deformation functions and
+        annotation query mapping, but does not manage
+        state or parameters.
         '''
         BaseTransformer.__init__(self)
 
@@ -95,7 +99,7 @@ class RandomTimeStretch(AbstractTimeStretch):
         self.dispatch['.*'] = self.deform_times
         self.dispatch['tempo'] = self.deform_tempo
 
-    def get_state(self):
+    def get_state(self, jam):
         '''Set the state for a transformation object.
 
         For a random time stretch, this corresponds to sampling

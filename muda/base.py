@@ -75,14 +75,14 @@ class BaseTransformer(object):
 
         self.n_samples = 1
 
-    def get_state(self):
+    def get_state(self, jam):
         '''Build the state object for a static transformer'''
         return self.get_params()
 
     @contextmanager
-    def _transform_state(self):
+    def _transform_state(self, jam):
         '''Initialize state for static transformers.'''
-        self._state = self.get_state()
+        self._state = self.get_state(jam)
         yield
 
     def _transform(self, jam):
@@ -112,7 +112,7 @@ class BaseTransformer(object):
         # We'll need a working copy of this object for modification purposes
         jam_working = copy.deepcopy(jam)
 
-        with self._transform_state():
+        with self._transform_state(jam_working):
             # Push our reconstructor onto the history stack
             jam_working.sandbox.muda['history'].append({'transformer': self.__json__,
                                                         'state': self._state})
