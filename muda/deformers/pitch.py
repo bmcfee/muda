@@ -56,7 +56,7 @@ class AbstractPitchShift(BaseTransformer):
         BaseTransformer.__init__(self)
 
         # Build the annotation mapping
-        self.dispatch['chord_harte'] = self.deform_chord
+        self.dispatch['key_mode|chord_harte'] = self.deform_note
         self.dispatch['melody_hz'] = self.deform_frequency
 
     def get_state(self, jam):
@@ -82,8 +82,8 @@ class AbstractPitchShift(BaseTransformer):
 
         annotation.data.value *= 2.0 ** (self._state['n_semitones'] / 12.0)
 
-    def deform_chord(self, annotation):
-        '''Deform chord annotations'''
+    def deform_note(self, annotation):
+        '''Deform note-valued annotations (chord or key)'''
 
         # First, figure out the tuning after deformation
         if -0.5 <= (self._state['tuning'] + self._state['n_semitones']) < 0.5:
