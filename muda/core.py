@@ -3,7 +3,7 @@
 # CREATED:2015-02-01 19:25:59 by Brian McFee <brian.mcfee@nyu.edu>
 '''Core functionality for muda'''
 
-import pyjams
+import jams
 import librosa
 
 from .base import *
@@ -15,14 +15,14 @@ def jam_pack(jam, **kwargs):
 
     Parameters
     ----------
-    jam : pyjams.JAMS
+    jam : jams.JAMS
         A JAMS object
 
     Examples
     --------
 
     >>> y, sr = librosa.load(librosa.util.example_audio_file())
-    >>> jam = pyjams.JAMS()
+    >>> jam = jams.JAMS()
     >>> muda.jam_pack(jam, y=y, sr=sr)
     >>> print muda
     '''
@@ -66,7 +66,7 @@ def load_jam_audio(jam_in, audio_file, **kwargs):
 
     Parameters
     ----------
-    jam_in : str or pyjams.JAMS
+    jam_in : str or jams.JAMS
         JAM filename to load
 
     audio_file : str
@@ -77,14 +77,14 @@ def load_jam_audio(jam_in, audio_file, **kwargs):
 
     Returns
     -------
-    jam : pyjams.JAMS
+    jam : jams.JAMS
         A jams object with audio data in the top-level sandbox
 
     '''
 
     if isinstance(jam_in, six.string_types):
-        jam = pyjams.load(jam_in)
-    elif isinstance(jam_in, pyjams.JAMS):
+        jam = jams.load(jam_in)
+    elif isinstance(jam_in, jams.JAMS):
         jam = jam_in
     else:
         raise TypeError('Invalid input type: ' + type(jam_in))

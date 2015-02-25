@@ -93,7 +93,7 @@ class BaseTransformer(object):
 
         Parameters
         ----------
-        jam : pyjams.JAMS
+        jam : jams.JAMS
             A single jam object to modify
 
         Returns
@@ -138,12 +138,12 @@ class BaseTransformer(object):
 
         Parameters
         ----------
-        jam : pyjams.JAMS
+        jam : jams.JAMS
             The jam to transform
 
         Generates
         ---------
-        jam_out : pyjams.JAMS
+        jam_out : jams.JAMS
             Iterator of transformed jams
         '''
 
@@ -237,7 +237,7 @@ class Pipeline(object):
 
         Parameters
         ----------
-        jam : pyjams.JAMS
+        jam : jams.JAMS
             The jam object to transform
 
         Generates
