@@ -107,11 +107,11 @@ class LogspaceTimeStretch(AbstractTimeStretch):
                                      num=self.n_samples,
                                      endpoint=True)
 
-            return dict(times=times[1:],
+            return dict(times=np.roll(times, -1),
                         rate=times[0])
 
         else:
-            return dict(times=self._state['times'][1:],
+            return dict(times=np.roll(self._state['times'], -1),
                         rate=self._state['times'][0])
 
 
