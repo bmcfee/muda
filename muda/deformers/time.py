@@ -91,8 +91,8 @@ class LogspaceTimeStretch(AbstractTimeStretch):
         if upper <= lower:
             raise ValueError('upper must be strictly larger than lower')
 
-        if not (n_samples > 0):
-            raise ValueError('n_samples must be positive')
+        if n_samples <= 0:
+            raise ValueError('n_samples must be strictly positive')
 
         self.n_samples = n_samples
         self.lower = float(lower)

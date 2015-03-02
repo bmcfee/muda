@@ -10,7 +10,7 @@ import numpy as np
 
 from ..base import BaseTransformer
 
-__all__ = ['PitchShift', 'RandomPitchShift']
+__all__ = ['PitchShift', 'RandomPitchShift', 'LinearPitchShift']
 
 
 def transpose(label, n_semitones):
@@ -150,3 +150,37 @@ class RandomPitchShift(AbstractPitchShift):
                                                 scale=self.sigma,
                                                 size=None)
         return state
+
+
+class LinearPitchShift(AbstractPitchShift):
+    '''Linearly spaced pitch shift generator'''
+    def __init__(self, n_samples, lower, upper):
+        '''Generate pitch-shifted examples spaced linearly'''
+
+        AbstractPitchShift.__init__(self)
+
+        if upper <= lower:
+            raise ValueError('upper must be strictly larger than lower')
+
+        if n_samples <= 0:
+            raise ValueError('n_samples must be strictly positive')
+
+        self.n_samples = n_samples
+        self.lower = float(lower)
+        self.upper = float(upper)
+
+    def get_state(self, jam):
+        '''Set the state for the transformation object'''
+
+        if not len(self._state):
+            shifts = np.linspace(self.lower,
+                                 self.upper,
+                                 num=self.n_samples,
+                                 endpoint=True)
+
+            return dict(shifts=shifts[1:],
+                        n_semitones=shifts[0])
+
+        else:
+            return dict(shifts=self._state['shifts'][1:],
+                        n_semitones=self._state['shifts'][0])
