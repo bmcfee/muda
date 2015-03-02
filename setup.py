@@ -29,6 +29,7 @@ setup(
     license='ISC',
     install_requires=[
         'librosa>=0.4',
+        'pyrubberband',
         'pandas',
         'pyjams>=0.1',
         'six',

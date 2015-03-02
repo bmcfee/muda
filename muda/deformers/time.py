@@ -4,6 +4,7 @@
 '''Time stretching deformations'''
 
 import librosa
+import pyrubberband as pyrb
 import numpy as np
 import pandas as pd
 
@@ -30,8 +31,8 @@ class AbstractTimeStretch(BaseTransformer):
 
     def audio(self, mudabox):
         '''Deform the audio and metadata'''
-        mudabox['y'] = librosa.effects.time_stretch(mudabox['y'],
-                                                    self._state['rate'])
+        mudabox['y'] = pyrb.time_stretch(mudabox['y'], mudabox['sr'],
+                                         self._state['rate'])
 
     def file_metadata(self, metadata):
         '''Deform the metadata'''
