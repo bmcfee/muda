@@ -10,7 +10,10 @@ import pandas as pd
 
 from ..base import BaseTransformer
 
-__all__ = ['TimeStretch', 'RandomTimeStretch', 'AnnotationBlur']
+__all__ = ['TimeStretch',
+           'RandomTimeStretch',
+           'LogspaceTimeStretch',
+           'AnnotationBlur']
 
 
 class AbstractTimeStretch(BaseTransformer):
@@ -73,6 +76,43 @@ class TimeStretch(AbstractTimeStretch):
         self.rate = float(rate)
         if rate <= 0:
             raise ValueError('rate parameter must be strictly positive.')
+
+
+class LogspaceTimeStretch(AbstractTimeStretch):
+    '''Logarithmically spaced time stretching'''
+    def __init__(self, n_samples, lower, upper):
+        '''Generate stretched examples distributed uniformly
+        in log-time.
+
+        '''
+
+        AbstractTimeStretch.__init__(self)
+
+        if upper <= lower:
+            raise ValueError('upper must be strictly larger than lower')
+
+        if not (n_samples > 0):
+            raise ValueError('n_samples must be positive')
+
+        self.n_samples = n_samples
+        self.lower = float(lower)
+        self.upper = float(upper)
+
+    def get_state(self, jam):
+        '''Set the state for the transformation object.'''
+
+        if not len(self._state):
+            times = 2.0**np.linspace(self.lower,
+                                     self.upper,
+                                     num=self.n_samples,
+                                     endpoint=True)
+
+            return dict(times=times[1:],
+                        rate=times[0])
+
+        else:
+            return dict(times=self._state['times'][1:],
+                        rate=self._state['times'][0])
 
 
 class RandomTimeStretch(AbstractTimeStretch):
