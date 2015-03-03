@@ -2,6 +2,7 @@
 '''Base module components.'''
 
 import copy
+from collections import OrderedDict
 
 import inspect
 
@@ -70,7 +71,7 @@ class BaseTransformer(object):
 
     def __init__(self):
         '''Base-class initialization'''
-        self.dispatch = dict()
+        self.dispatch = OrderedDict()
         self._state = dict()
 
         self.n_samples = 1
