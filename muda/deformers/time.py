@@ -107,12 +107,17 @@ class LogspaceTimeStretch(AbstractTimeStretch):
                                      num=self.n_samples,
                                      endpoint=True)
 
-            return dict(times=np.roll(times, -1),
+            return dict(times=times,
+                        index=0,
                         rate=times[0])
 
         else:
-            return dict(times=np.roll(self._state['times'], -1),
-                        rate=self._state['times'][0])
+            state = dict()
+            state.update(self._state)
+            state['index'] = (state['index'] + 1) % len(state['times'])
+            state['rate'] = state['times'][state['index']]
+
+            return state
 
 
 class RandomTimeStretch(AbstractTimeStretch):

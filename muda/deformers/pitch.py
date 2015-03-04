@@ -185,7 +185,7 @@ class LinearPitchShift(AbstractPitchShift):
         else:
             state = dict()
             state.update(self._state)
-            state['index'] += 1
+            state['index'] = (state['index'] + 1) % len(state['shifts'])
             state['n_semitones'] = state['shifts'][state['index']]
 
             return state
