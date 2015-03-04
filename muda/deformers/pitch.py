@@ -178,9 +178,14 @@ class LinearPitchShift(AbstractPitchShift):
                                  num=self.n_samples,
                                  endpoint=True)
 
-            return dict(shifts=np.roll(shifts, -1),
+            return dict(shifts=shifts,
+                        index=0,
                         n_semitones=shifts[0])
 
         else:
-            return dict(shifts=np.roll(self._state['shifts'], -1),
-                        n_semitones=self._state['shifts'][0])
+            state = dict()
+            state.update(self._state)
+            state['index'] += 1
+            state['n_semitones'] = state['shifts'][state['index']]
+
+            return state
