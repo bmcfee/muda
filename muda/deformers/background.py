@@ -138,7 +138,7 @@ class BackgroundNoise(BaseTransformer):
         fname = self.files[idx % len(self.files)]
 
         noise = sample_clip(fname, len(mudabox['y']), mudabox['sr'],
-                            mono=mudabox['y'].ndim > 1)
+                            mono=mudabox['y'].ndim == 1)
 
         # Normalize the data
         mudabox['y'] = librosa.util.normalize(mudabox['y'])
