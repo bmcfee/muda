@@ -154,6 +154,9 @@ class BaseTransformer(object):
                 yield jam_out
                 i = i + 1
 
+        # Reset the state
+        self._state = dict()
+
     @property
     def __json__(self):
         '''Serializer'''
@@ -196,7 +199,7 @@ class Pipeline(object):
 
         for t in transformers:
             if not isinstance(t, BaseTransformer):
-                raise TypeError('{:s} is not of type BaseTransformer')
+                raise TypeError('{:s} is not of type BaseTransformer'.format(t))
 
     @property
     def __json__(self):
