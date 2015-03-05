@@ -98,6 +98,8 @@ class BackgroundNoise(BaseTransformer):
             files = [files]
 
         for fname in files:
+            if fname is None:
+                continue
             if not os.path.exists(fname):
                 raise RuntimeError('file not found: {}'.format(fname))
 
@@ -127,10 +129,6 @@ class BackgroundNoise(BaseTransformer):
 
     def audio(self, mudabox):
         '''Deform the audio'''
-
-        # State needs to specify:
-        #   filename
-        #   weight
 
         idx = self._state['index']
         weight = self._state['weight']

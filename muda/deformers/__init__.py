@@ -6,4 +6,5 @@
 from .time import *
 from .pitch import *
 from .background import *
+from .effects import *
 from .util import *
