@@ -32,6 +32,8 @@ setup(
         'pyrubberband',
         'pandas',
         'pyjams>=0.1',
+        'pysoundfile',
+        'sklearn',
         'six',
     ],
     extras_require={

@@ -66,8 +66,9 @@ class AbstractPitchShift(BaseTransformer):
         state = BaseTransformer.get_state(self, jam)
 
         mudabox = jam.sandbox.muda
-        state['tuning'] = librosa.estimate_tuning(y=mudabox['y'],
-                                                  sr=mudabox['sr'])
+        if 'tuning' not in state:
+            state['tuning'] = librosa.estimate_tuning(y=mudabox['y'],
+                                                      sr=mudabox['sr'])
 
         return state
 
@@ -172,20 +173,24 @@ class LinearPitchShift(AbstractPitchShift):
     def get_state(self, jam):
         '''Set the state for the transformation object'''
 
-        if not len(self._state):
+        state = dict()
+        state.update(self._state)
+
+        if not len(state):
+            # Get the tuning
+            state = AbstractPitchShift.get_state(self, jam)
+
             shifts = np.linspace(self.lower,
                                  self.upper,
                                  num=self.n_samples,
                                  endpoint=True)
 
-            return dict(shifts=shifts,
-                        index=0,
-                        n_semitones=shifts[0])
+            state['shifts'] = shifts
+            state['index'] = 0
 
         else:
-            state = dict()
-            state.update(self._state)
             state['index'] = (state['index'] + 1) % len(state['shifts'])
-            state['n_semitones'] = state['shifts'][state['index']]
 
-            return state
+        state['n_semitones'] = state['shifts'][state['index']]
+
+        return state

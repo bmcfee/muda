@@ -101,23 +101,24 @@ class LogspaceTimeStretch(AbstractTimeStretch):
     def get_state(self, jam):
         '''Set the state for the transformation object.'''
 
-        if not len(self._state):
+        state = dict()
+        state.update(self._state)
+
+        if not len(state):
             times = 2.0**np.linspace(self.lower,
                                      self.upper,
                                      num=self.n_samples,
                                      endpoint=True)
 
-            return dict(times=times,
-                        index=0,
-                        rate=times[0])
+            state['times'] = times
+            state['index'] = 0
 
         else:
-            state = dict()
-            state.update(self._state)
             state['index'] = (state['index'] + 1) % len(state['times'])
-            state['rate'] = state['times'][state['index']]
 
-            return state
+        state['rate'] = state['times'][state['index']]
+
+        return state
 
 
 class RandomTimeStretch(AbstractTimeStretch):

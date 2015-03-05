@@ -5,4 +5,5 @@
 
 from .time import *
 from .pitch import *
+from .background import *
 from .util import *
