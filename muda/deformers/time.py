@@ -13,7 +13,8 @@ from ..base import BaseTransformer
 __all__ = ['TimeStretch',
            'RandomTimeStretch',
            'LogspaceTimeStretch',
-           'AnnotationBlur']
+           'AnnotationBlur',
+           'Splitter']
 
 
 class AbstractTimeStretch(BaseTransformer):
@@ -236,3 +237,116 @@ class AnnotationBlur(BaseTransformer):
         # Clip to the track duration - interval start
         d = [np.clip(d_i, 0, track_duration - t_i) for (d_i, t_i) in zip(d, t)]
         annotation.data.duration = pd.to_timedelta(d, unit='s')
+
+
+class Splitter(BaseTransformer):
+    '''Split a single jams object into multiple small tiles'''
+
+    def __init__(self, duration, stride, min_duration=0.5):
+        '''
+        Parameters
+        ----------
+        duration : float > 0
+            The (maximum) length (in seconds) of the sampled objects
+
+        stride : float > 0
+            The amount (in seconds) to advance between each sample
+
+        min_duration : float >= 0
+            The minimum duration to allow.  If the cropped example is too
+            small, it will not be generated.
+
+        '''
+
+        BaseTransformer.__init__(self)
+
+        if duration <= 0:
+            raise ValueError('duration must be strictly positive')
+
+        if stride <= 0:
+            raise ValueError('stride must be strictly positive')
+
+        if min_duration < 0:
+            raise ValueError('min_duration must be non-negative')
+
+        self.duration = duration
+        self.stride = stride
+        self.min_duration = min_duration
+
+        self.dispatch['.*'] = self.crop_times
+
+    def get_state(self, jam):
+        '''Set the state for the transformation object'''
+
+        state = dict()
+        state.update(self._state)
+
+        if not len(state):
+            mudabox = jam.sandbox.muda
+
+            state['duration'] = librosa.get_duration(y=mudabox['y'],
+                                                     sr=mudabox['sr'])
+
+            state['offset'] = np.arange(start=0,
+                                        stop=(state['duration'] -
+                                              self.min_duration),
+                                        step=self.stride)
+            state['index'] = 0
+            self.n_samples = len(state['offset'])
+
+        else:
+            state['index'] += 1
+
+        return state
+
+    def audio(self, mudabox):
+        '''Crop the audio'''
+
+        state = self._state
+        offset_idx = int(state['offset'][state['index']] * mudabox['sr'])
+        duration = int(self.duration * mudabox['sr'])
+
+        mudabox['y'] = mudabox['y'][offset_idx:offset_idx + duration]
+
+    def crop_times(self, annotation):
+        '''Crop the annotation object'''
+
+        state = self._state
+
+        # Convert timings to td64
+        min_time = pd.to_timedelta(state['offset'][state['index']],
+                                   unit='s')
+        duration = pd.to_timedelta(self.duration, unit='s')
+
+        # Get all the rows where
+        #   min_time <= time + duration
+        #   time <= state.offset[state.index] + state.duration
+        data = annotation.data
+        data = data[data['time'] + data['duration'] >= min_time]
+        data = data[data['time'] <= min_time + duration]
+
+        # Move any partially contained intervals up to the feasible range
+        #  [   |    )
+        #  t   s    t+d1 = s + d2
+        #  d2 = d1 + (t - s)
+        #      s = max(t, min_time)
+        #  d2 = d1 - (max(t, min_time) - t)
+        #     = d1 - max(t - t, min_time - t)
+        #     = d1 - max(0, min_time - t)
+        shift = np.maximum(0, min_time - data['time'])
+        data['duration'] -= shift
+
+        # And now reset everything to the new t=0
+        # time -= min_time
+        data['time'] -= min_time
+        data['time'] = data['time'].clip(lower=pd.to_timedelta(0, unit='s'))
+
+        # For any rows with time + duration > self.duration:
+        #   [  |   )
+        #   t  d2  d1
+        # t + d2 <= duration
+        # d2 <= duration - t
+        # d2 = min(d1, duration - t)
+        #   duration = min(duration, self.duration - time)
+        data['duration'] = np.minimum(data['duration'],
+                                      duration - data['time'])
