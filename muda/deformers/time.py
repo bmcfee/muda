@@ -3,6 +3,7 @@
 # CREATED:2015-02-02 10:09:43 by Brian McFee <brian.mcfee@nyu.edu>
 '''Time stretching deformations'''
 
+import jams
 import librosa
 import pyrubberband as pyrb
 import numpy as np
@@ -350,3 +351,6 @@ class Splitter(BaseTransformer):
         #   duration = min(duration, self.duration - time)
         data['duration'] = np.minimum(data['duration'],
                                       duration - data['time'])
+
+        data = data.reset_index()
+        annotation.data = jams.JamsFrame.from_dataframe(data)
