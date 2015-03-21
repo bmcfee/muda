@@ -43,7 +43,7 @@ class Resample(BaseTransformer):
         state = BaseTransformer.get_state(self, jam)
 
         if not len(self._state):
-            state['rates'] = self.rates
+            state['rates'] = list(self.rates)
             state['index'] = 0
         else:
             state.update(self._state)

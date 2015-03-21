@@ -112,7 +112,7 @@ class LogspaceTimeStretch(AbstractTimeStretch):
                                      num=self.n_samples,
                                      endpoint=True)
 
-            state['times'] = times
+            state['times'] = list(times)
             state['index'] = 0
 
         else:
@@ -155,9 +155,9 @@ class RandomTimeStretch(AbstractTimeStretch):
         from the stretch distribution.
         '''
 
-        return dict(rate=np.random.lognormal(mean=self.location,
+        return dict(rate=list(np.random.lognormal(mean=self.location,
                                              sigma=self.scale,
-                                             size=None))
+                                             size=None)))
 
 
 class AnnotationBlur(BaseTransformer):
@@ -288,10 +288,10 @@ class Splitter(BaseTransformer):
             state['duration'] = librosa.get_duration(y=mudabox['y'],
                                                      sr=mudabox['sr'])
 
-            state['offset'] = np.arange(start=0,
-                                        stop=(state['duration'] -
-                                              self.min_duration),
-                                        step=self.stride)
+            state['offset'] = list(np.arange(start=0,
+                                             stop=(state['duration'] -
+                                                   self.min_duration),
+                                             step=self.stride))
             state['index'] = 0
             self.n_samples = len(state['offset'])
 

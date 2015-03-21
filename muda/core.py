@@ -5,6 +5,7 @@
 
 import jams
 import librosa
+import pysoundfile as psf
 
 from .base import *
 import warnings
@@ -92,3 +93,32 @@ def load_jam_audio(jam_in, audio_file, **kwargs):
     y, sr = librosa.load(audio_file, **kwargs)
 
     return jam_pack(jam, y=y, sr=sr)
+
+
+def save(filename_audio, filename_jam, jam, strict=True, **kwargs):
+    '''Save a muda jam to disk
+    
+    Parameters
+    ----------
+    filename_audio: str
+        The path to store the audio file
+
+    filename_jam: str
+        The path to store the jams object
+
+    strict: bool
+        Strict safety checking for jams output
+
+    kwargs
+        Additional parameters to `pysoundfile.write`
+    
+    '''
+
+    y = jam.sandbox.muda.pop('y')
+    sr = jam.sandbox.muda.pop('sr')
+
+    # First, dump the audio file
+    psf.write(y, filename_audio, sr, **kwargs)
+
+    # Then dump the jam
+    jam.save(filename_jam, strict=strict)

@@ -185,7 +185,7 @@ class LinearPitchShift(AbstractPitchShift):
                                  num=self.n_samples,
                                  endpoint=True)
 
-            state['shifts'] = shifts
+            state['shifts'] = list(shifts)
             state['index'] = 0
 
         else:
