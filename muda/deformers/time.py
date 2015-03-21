@@ -39,7 +39,7 @@ class AbstractTimeStretch(BaseTransformer):
         mudabox['y'] = pyrb.time_stretch(mudabox['y'], mudabox['sr'],
                                          self._state['rate'])
 
-    def file_metadata(self, metadata):
+    def metadata(self, metadata):
         '''Deform the metadata'''
         metadata.duration /= self._state['rate']
 
@@ -299,6 +299,14 @@ class Splitter(BaseTransformer):
             state['index'] += 1
 
         return state
+
+    def metadata(self, metadata):
+        '''Adjust the metadata'''
+
+        state = self._state
+        metadata.duration = np.minimum(self.duration,
+                                       state['duration'] -
+                                       state['offset'][state['index']])
 
     def audio(self, mudabox):
         '''Crop the audio'''
