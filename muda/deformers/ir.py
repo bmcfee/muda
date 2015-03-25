@@ -43,7 +43,7 @@ def mean_group_delay(y, sr=22050, n_fft=2048):
 
     delay = - librosa.feature.delta(phase / bin_width, width=3, axis=0)
 
-    return np.median(delay)
+    return np.mean(delay)
 
 
 class ImpulseResponse(BaseTransformer):
