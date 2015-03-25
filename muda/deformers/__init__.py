@@ -8,4 +8,5 @@ from .pitch import *
 from .background import *
 from .ir import *
 from .effects import *
+from .sox import *
 from .util import *
