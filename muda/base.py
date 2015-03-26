@@ -152,6 +152,9 @@ class BaseTransformer(object):
             Iterator of transformed jams
         '''
 
+        # Reset the state
+        self._state = dict()
+
         i = 0
         while self.n_samples is None or i < self.n_samples:
             for jam_out in self._transform(jam):
@@ -165,8 +168,7 @@ class BaseTransformer(object):
     def __json__(self):
         '''Serializer'''
 
-        return dict(name=self.__class__.__name__,
-                    params=self.get_params())
+        return self.get_params()
 
 
 class Pipeline(object):
