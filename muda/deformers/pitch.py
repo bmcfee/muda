@@ -93,7 +93,7 @@ class AbstractPitchShift(BaseTransformer):
 
 class PitchShift(AbstractPitchShift):
     '''Static pitch shifting by (fractional) semitones'''
-    def __init__(self, n_semitones):
+    def __init__(self, n_semitones=1):
         '''Pitch shifting
 
         Parameters
@@ -115,7 +115,7 @@ class PitchShift(AbstractPitchShift):
 
 class RandomPitchShift(AbstractPitchShift):
     '''Randomized pitch shifter'''
-    def __init__(self, n_samples, mean=0.0, sigma=1.0):
+    def __init__(self, n_samples=3, mean=0.0, sigma=1.0):
         '''Randomized pitch shifting.
 
         Pitch is transposed by a normally distributed random variable.
@@ -156,7 +156,7 @@ class RandomPitchShift(AbstractPitchShift):
 
 class LinearPitchShift(AbstractPitchShift):
     '''Linearly spaced pitch shift generator'''
-    def __init__(self, n_samples, lower, upper):
+    def __init__(self, n_samples=3, lower=-1, upper=1):
         '''Generate pitch-shifted examples spaced linearly'''
 
         AbstractPitchShift.__init__(self)

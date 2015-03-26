@@ -95,7 +95,7 @@ def drc(y, sr, preset):
 class DynamicRangeCompression(BaseTransformer):
     '''Dynamic range compression via sox'''
 
-    def __init__(self, preset):
+    def __init__(self, preset=None):
         '''DRC'''
 
         BaseTransformer.__init__(self)

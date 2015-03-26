@@ -63,7 +63,7 @@ class AbstractTimeStretch(BaseTransformer):
 
 class TimeStretch(AbstractTimeStretch):
     '''Static time stretching by a fixed rate'''
-    def __init__(self, rate):
+    def __init__(self, rate=1.2):
         '''Time stretching
 
         Parameters
@@ -86,7 +86,7 @@ class TimeStretch(AbstractTimeStretch):
 
 class LogspaceTimeStretch(AbstractTimeStretch):
     '''Logarithmically spaced time stretching'''
-    def __init__(self, n_samples, lower, upper):
+    def __init__(self, n_samples=3, lower=0.8, upper=1.2):
         '''Generate stretched examples distributed uniformly
         in log-time.
 
@@ -118,7 +118,7 @@ class LogspaceTimeStretch(AbstractTimeStretch):
 
 class RandomTimeStretch(AbstractTimeStretch):
     '''Random time stretching'''
-    def __init__(self, n_samples, location=0.0, scale=1.0e-1):
+    def __init__(self, n_samples=3, location=0.0, scale=1.0e-1):
         '''Generate randomly stretched examples.
 
         For each deformation, the rate parameter is drawn from a
@@ -155,7 +155,7 @@ class RandomTimeStretch(AbstractTimeStretch):
 class AnnotationBlur(BaseTransformer):
     '''Randomly perturb the timing of observations.'''
 
-    def __init__(self, n_samples, mean=0.0, sigma=1.0,
+    def __init__(self, n_samples=3, mean=0.0, sigma=1.0,
                  time=True, duration=False):
         '''Randomly perturb the timing of observations in a JAMS annotation.
 
@@ -234,7 +234,7 @@ class AnnotationBlur(BaseTransformer):
 class Splitter(BaseTransformer):
     '''Split a single jams object into multiple small tiles'''
 
-    def __init__(self, duration, stride, min_duration=0.5):
+    def __init__(self, duration=10.0, stride=5.0, min_duration=0.5):
         '''
         Parameters
         ----------

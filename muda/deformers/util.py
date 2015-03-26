@@ -18,7 +18,7 @@ class Bypass(BaseTransformer):
            `--> Bypass transformer ---'
     '''
 
-    def __init__(self, transformer):
+    def __init__(self, transformer=None):
         '''Bypass transformer'''
 
         if not isinstance(transformer, BaseTransformer):

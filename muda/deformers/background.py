@@ -70,7 +70,7 @@ def sample_clip(filename, n_samples, sr, mono=True):
 class BackgroundNoise(BaseTransformer):
     '''Additive background noise deformations'''
 
-    def __init__(self, n_samples, files, weight_min, weight_max):
+    def __init__(self, n_samples=1, files=None, weight_min=0.1, weight_max=0.5):
         '''Additive background noise deformations
 
         Parameters

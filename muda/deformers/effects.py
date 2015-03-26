@@ -12,7 +12,7 @@ from ..base import BaseTransformer
 class Resample(BaseTransformer):
     '''Resampling deformations'''
 
-    def __init__(self, rates, res_type='sinc_fastest'):
+    def __init__(self, rates=None, res_type='sinc_fastest'):
         '''Resampling deformations.
 
         For each rate parameter `r`, the signal is resampled to `r`

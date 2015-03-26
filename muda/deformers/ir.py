@@ -49,7 +49,7 @@ def mean_group_delay(y, sr=22050, n_fft=2048):
 class ImpulseResponse(BaseTransformer):
     '''Impulse response filtering'''
 
-    def __init__(self, files):
+    def __init__(self, files=None):
         '''Impulse response filtering
 
         Parameters
