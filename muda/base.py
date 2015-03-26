@@ -6,7 +6,6 @@ from collections import OrderedDict
 
 import inspect
 
-from contextlib import contextmanager
 from sklearn.base import _pprint
 
 import six
