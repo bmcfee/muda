@@ -156,7 +156,7 @@ class BaseTransformer(object):
 class Pipeline(object):
     '''Wrapper which allows multiple transformers to be chained together'''
 
-    def __init__(self, *steps):
+    def __init__(self, steps=None):
         '''Transformation pipeline.
 
         A given JAMS object will be transformed sequentially by
@@ -171,7 +171,7 @@ class Pipeline(object):
         --------
         >>> P = muda.deformers.PitchShift(semitones=5)
         >>> T = muda.deformers.TimeStretch(speed=1.25)
-        >>> Pipe = Pipeline( ('Pitch:maj3', P), ('Speed:1.25x', T) )
+        >>> Pipe = Pipeline(steps=[('Pitch:maj3', P), ('Speed:1.25x', T)])
         >>> output = Pipe.transform(data)
         '''
 
@@ -194,10 +194,10 @@ class Pipeline(object):
 
         out = {}
         out['__class__'] = self.__class__
-        out['params'] = []
+        out['params'] = dict(steps=[])
 
         for name, step in self.steps:
-            out['params'].append([name, step.get_params(deep=True)])
+            out['params']['steps'].append([name, step.get_params(deep=True)])
 
         return out
 
