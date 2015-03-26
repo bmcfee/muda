@@ -115,25 +115,25 @@ class BaseTransformer(object):
             raise RuntimeError('No muda state found in jams sandbox.')
 
         # We'll need a working copy of this object for modification purposes
-        jam_working = copy.deepcopy(jam)
+        jam_w = copy.deepcopy(jam)
 
-        with self._transform_state(jam_working):
+        with self._transform_state(jam_w):
             # Push our reconstructor onto the history stack
-            jam_working.sandbox.muda['history'].append({'transformer': self.__serialize__,
-                                                        'state': self._state})
+            jam_w.sandbox.muda['history'].append({'transformer': self.__serialize__,
+                                                  'state': self._state})
 
             if hasattr(self, 'audio'):
-                self.audio(jam_working.sandbox.muda)
+                self.audio(jam_w.sandbox.muda)
 
             if hasattr(self, 'metadata'):
-                self.metadata(jam_working.file_metadata)
+                self.metadata(jam_w.file_metadata)
 
             # Walk over the list of deformers
             for query, function in six.iteritems(self.dispatch):
-                for matched_annotation in jam_working.search(namespace=query):
+                for matched_annotation in jam_w.search(namespace=query):
                     function(matched_annotation)
 
-        return [jam_working]
+        return [jam_w]
 
     def transform(self, jam):
         '''Iterative transformation generator
@@ -153,6 +153,9 @@ class BaseTransformer(object):
         '''
 
         # Reset the state
+        # XXX:    2015-03-25 22:37:15 by Brian McFee <brian.mcfee@nyu.edu>
+        # this should be a context for state construction
+        #   within _transform, we should iterate over states in contexts
         self._state = dict()
 
         i = 0
