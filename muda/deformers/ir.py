@@ -78,12 +78,12 @@ class ImpulseResponse(BaseTransformer):
         '''Iterate the impulse respones states'''
 
         state = dict()
-        state['duration'] = librosa.get_duration(y=jam.sandbox.muda['y'],
-                                                 sr=jam.sandbox.muda['sr'])
+        mudabox = jam.sandbox.muda
+        state['duration'] = librosa.get_duration(y=mudabox._audio['y'],
+                                                 sr=mudabox._audio['sr'])
 
         for i in range(len(self.ir_)):
             state['index'] = i
-
             yield state
 
     def audio(self, mudabox, state):
@@ -91,17 +91,17 @@ class ImpulseResponse(BaseTransformer):
         idx = state['index']
 
         # If the input signal isn't big enough, pad it out first
-        n = len(mudabox['y'])
+        n = len(mudabox._audio['y'])
         if n < len(self.ir_[idx]):
-            mudabox['y'] = librosa.util.fix_length(mudabox['y'],
-                                                   self.ir_[idx])
+            mudabox._audio['y'] = librosa.util.fix_length(mudabox._audio['y'],
+                                                          self.ir_[idx])
 
-        mudabox['y'] = scipy.signal.fftconvolve(mudabox['y'],
-                                                self.ir_[idx],
-                                                mode='same')
+        mudabox._audio['y'] = scipy.signal.fftconvolve(mudabox._audio['y'],
+                                                       self.ir_[idx],
+                                                       mode='same')
 
         # Trim back to the original duration
-        mudabox['y'] = mudabox['y'][:n]
+        mudabox._audio['y'] = mudabox._audio['y'][:n]
 
     def deform_times(self, annotation, state):
         '''Apply group delay for the selected filter'''
