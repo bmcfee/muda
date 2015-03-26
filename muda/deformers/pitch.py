@@ -62,16 +62,16 @@ class AbstractPitchShift(BaseTransformer):
 
     def states(self, jam):
         mudabox = jam.sandbox.muda
-        state = dict(tuning=librosa.estimate_tuning(y=mudabox['y'],
-                                                    sr=mudabox['sr']))
+        state = dict(tuning=librosa.estimate_tuning(y=mudabox._audio['y'],
+                                                    sr=mudabox._audio['sr']))
         yield state
 
     def audio(self, mudabox, state):
         '''Deform the audio'''
 
-        mudabox['y'] = pyrb.pitch_shift(mudabox['y'],
-                                        mudabox['sr'],
-                                        state['n_semitones'])
+        mudabox._audio['y'] = pyrb.pitch_shift(mudabox._audio['y'],
+                                               mudabox._audio['sr'],
+                                               state['n_semitones'])
 
     def deform_frequency(self, annotation, state):
         '''Deform frequency-valued annotations'''
