@@ -36,8 +36,9 @@ class AbstractTimeStretch(BaseTransformer):
 
     def audio(self, mudabox, state):
         '''Deform the audio and metadata'''
-        mudabox['y'] = pyrb.time_stretch(mudabox['y'], mudabox['sr'],
-                                         state['rate'])
+        mudabox._audio['y'] = pyrb.time_stretch(mudabox._audio['y'],
+                                                mudabox._audio['sr'],
+                                                state['rate'])
 
     def metadata(self, metadata, state):
         '''Deform the metadata'''
@@ -195,8 +196,9 @@ class AnnotationBlur(BaseTransformer):
         '''Get the state information from the jam'''
 
         state = dict()
-        state['duration'] = librosa.get_duration(y=jam.sandbox.muda['y'],
-                                                 sr=jam.sandbox.muda['sr'])
+        mudabox = jam.sandbox.muda
+        state['duration'] = librosa.get_duration(y=mudabox._audio['y'],
+                                                 sr=mudabox._audio['sr'])
         yield state
 
     def deform_annotation(self, annotation, state):
@@ -272,8 +274,8 @@ class Splitter(BaseTransformer):
 
         mudabox = jam.sandbox.muda
 
-        state['track_duration'] = librosa.get_duration(y=mudabox['y'],
-                                                       sr=mudabox['sr'])
+        state['track_duration'] = librosa.get_duration(y=mudabox._audio['y'],
+                                                       sr=mudabox._audio['sr'])
 
         offsets = np.arange(start=0,
                             stop=(state['track_duration'] - self.min_duration),
@@ -292,10 +294,10 @@ class Splitter(BaseTransformer):
     def audio(self, mudabox, state):
         '''Crop the audio'''
 
-        offset_idx = int(state['offset'] * mudabox['sr'])
-        duration = int(self.duration * mudabox['sr'])
+        offset_idx = int(state['offset'] * mudabox._audio['sr'])
+        duration = int(self.duration * mudabox._audio['sr'])
 
-        mudabox['y'] = mudabox['y'][offset_idx:offset_idx + duration]
+        mudabox._audio['y'] = mudabox._audio['y'][offset_idx:offset_idx + duration]
 
     def crop_times(self, annotation, state):
         '''Crop the annotation object'''
