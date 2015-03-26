@@ -50,15 +50,19 @@ class BaseTransformer(object):
             A dictionary containing all parameters for this object
         '''
 
-        out = dict()
+        out = dict(__class__=self.__class__,
+                   params=dict())
 
         for key in self._get_param_names():
             value = getattr(self, key, None)
 
             if deep and hasattr(value, 'get_params'):
                 deep_items = value.get_params().items()
-                out.update((key + '__' + k, val) for k, val in deep_items)
-            out[key] = value
+                out['params'][key] = dict(__class__=value.__class__)
+                out['params'][key].update((k, val) for k, val in deep_items)
+            else:
+                out['params'][key] = value
+
         return out
 
     def __repr__(self):
@@ -66,7 +70,7 @@ class BaseTransformer(object):
 
         class_name = self.__class__.__name__
         return '{:s}({:s})'.format(class_name,
-                                   _pprint(self.get_params(deep=False),
+                                   _pprint(self.get_params(deep=False)['params'],
                                            offset=len(class_name),),)
 
     def __init__(self):
@@ -187,10 +191,10 @@ class Pipeline(object):
         >>> output = Pipe.transform(data)
         '''
 
-        self.named_steps = dict(steps)
+        named_steps = dict(steps)
         names, transformers = zip(*steps)
 
-        if len(self.named_steps) != len(steps):
+        if len(named_steps) != len(steps):
             raise ValueError("Names provided are not unique: "
                              " {:s}".format(names,))
 
@@ -199,22 +203,18 @@ class Pipeline(object):
 
         for t in transformers:
             if not isinstance(t, BaseTransformer):
-                raise TypeError('{:s} is not of type BaseTransformer'.format(t))
-
-    @property
-    def __json__(self):
-        '''Serialize the pipeline'''
-
-        return dict(name=self.__class__.__name__,
-                    params=[(name, t.__json__) for (name, t) in self.steps])
+                raise TypeError('{:s} is not a BaseTransformer'.format(t))
 
     def get_params(self):
         '''Get the parameters for this object.  Returns as a dict.'''
 
-        out = self.named_steps.copy()
-        for name, step in self.named_steps.iteritems():
-            for key, value in step.get_params(deep=True).iteritems():
-                out['{:s}__{:s}'.format(name, key)] = value
+        out = {}
+        out['__class__'] = self.__class__
+        out['params'] = []
+
+        for name, step in self.steps:
+            out['params'].append([name, step.get_params(deep=True)])
+
         return out
 
     def __repr__(self):
