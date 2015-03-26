@@ -29,37 +29,11 @@ def jam_pack(jam, **kwargs):
     '''
 
     if not hasattr(jam.sandbox, 'muda'):
-        jam.sandbox.muda = dict(history=[], state=[])
+        jam.sandbox.muda = jams.Sandbox(history=[], state=[])
 
-    jam.sandbox.muda.update(kwargs)
+    jam.sandbox.muda.update(**kwargs)
 
     return jam
-
-
-def jam_pop(jam, *keys):
-    '''Remove specified keys from the jams muda sandbox.
-
-    Parameters
-    ----------
-    keys : one or more positional arguments
-        Keys to be purged from the sandbox
-
-    Returns
-    -------
-    values : dict
-        Dictionary containing the popped values
-    '''
-
-    if not hasattr(jam.sandbox, 'muda'):
-        warnings.warn('No muda sandbox found in jam')
-        return
-
-    output = {}
-
-    for key in keys:
-        output[key] = jam.sandbox.muda.pop(key)
-
-    return output
 
 
 def load_jam_audio(jam_in, audio_file, **kwargs):
@@ -92,12 +66,12 @@ def load_jam_audio(jam_in, audio_file, **kwargs):
 
     y, sr = librosa.load(audio_file, **kwargs)
 
-    return jam_pack(jam, y=y, sr=sr)
+    return jam_pack(jam, _audio=dict(y=y, sr=sr))
 
 
 def save(filename_audio, filename_jam, jam, strict=True, **kwargs):
     '''Save a muda jam to disk
-    
+
     Parameters
     ----------
     filename_audio: str
@@ -111,11 +85,11 @@ def save(filename_audio, filename_jam, jam, strict=True, **kwargs):
 
     kwargs
         Additional parameters to `pysoundfile.write`
-    
+
     '''
 
-    y = jam.sandbox.muda.pop('y')
-    sr = jam.sandbox.muda.pop('sr')
+    y = jam.sandbox.muda._audio['y']
+    sr = jam.sandbox.muda._audio['sr']
 
     # First, dump the audio file
     psf.write(y, filename_audio, sr, **kwargs)

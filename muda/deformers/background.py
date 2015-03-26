@@ -124,11 +124,13 @@ class BackgroundNoise(BaseTransformer):
         weight = state['weight']
         fname = state['filename']
 
-        noise = sample_clip(fname, len(mudabox['y']), mudabox['sr'],
-                            mono=mudabox['y'].ndim == 1)
+        noise = sample_clip(fname, len(mudabox._audio['y']),
+                            mudabox._audio['sr'],
+                            mono=mudabox._audio['y'].ndim == 1)
 
         # Normalize the data
-        mudabox['y'] = librosa.util.normalize(mudabox['y'])
+        mudabox._audio['y'] = librosa.util.normalize(mudabox._audio['y'])
         noise = librosa.util.normalize(noise)
 
-        mudabox['y'] = (1.0 - weight) * mudabox['y'] + weight * noise
+        mudabox._audio['y'] = ((1.0 - weight) * mudabox._audio['y'] +
+                               weight * noise)
