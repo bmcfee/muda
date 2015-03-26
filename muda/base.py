@@ -76,20 +76,10 @@ class BaseTransformer(object):
     def __init__(self):
         '''Base-class initialization'''
         self.dispatch = OrderedDict()
-        self.n_samples = 1
 
-    def init_state(self, jam):
-        '''Build the state object for a static transformer'''
-        return dict()
-
-    def next_state(self, jam, state):
-        '''Default next-state logic: do nothing'''
-        return state
-
-    @contextmanager
-    def _init_state(self, jam):
-        '''Initialize state for static transformers.'''
-        yield self.init_state(jam)
+    def states(self, jam):
+        '''Iterate the state object for a static transformer'''
+        yield dict()
 
     def _transform(self, jam, state):
         '''Apply the transformation to audio and annotations.
@@ -133,7 +123,7 @@ class BaseTransformer(object):
             for matched_annotation in jam_w.search(namespace=query):
                 function(matched_annotation, state)
 
-        return [jam_w]
+        return jam_w
 
     def transform(self, jam):
         '''Iterative transformation generator
@@ -152,13 +142,8 @@ class BaseTransformer(object):
             Iterator of transformed jams
         '''
 
-        with self._init_state(jam) as state:
-            i = 0
-            while self.n_samples is None or i < self.n_samples:
-                for jam_out in self._transform(jam, state):
-                    yield jam_out
-                    i = i + 1
-                    state = self.next_state(jam, state)
+        for state in self.states(jam):
+            yield self._transform(jam, state)
 
     @property
     def __serialize__(self):
