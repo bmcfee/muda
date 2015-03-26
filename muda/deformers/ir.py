@@ -64,7 +64,6 @@ class ImpulseResponse(BaseTransformer):
             files = [files]
 
         BaseTransformer.__init__(self)
-        self.n_samples = len(files)
         self.files = files
 
         self.ir_ = []
@@ -75,24 +74,21 @@ class ImpulseResponse(BaseTransformer):
 
         self.dispatch['.*'] = self.deform_times
 
-    def get_state(self, jam):
-        '''Build the ir state'''
+    def states(self, jam):
+        '''Iterate the impulse respones states'''
 
-        state = BaseTransformer.get_state(self, jam)
+        state = dict()
+        state['duration'] = librosa.get_duration(y=jam.sandbox.muda['y'],
+                                                 sr=jam.sandbox.muda['sr'])
 
-        if not len(self._state):
-            state['index'] = 0
-            state['duration'] = librosa.get_duration(y=jam.sandbox.muda['y'],
-                                                     sr=jam.sandbox.muda['sr'])
-        else:
-            state.update(self._state)
-            state['index'] += 1
+        for i in range(len(self.ir_)):
+            state['index'] = i
 
-        return state
+            yield state
 
-    def audio(self, mudabox):
+    def audio(self, mudabox, state):
         '''Audio deformation for impulse responses'''
-        idx = self._state['index']
+        idx = state['index']
 
         # If the input signal isn't big enough, pad it out first
         n = len(mudabox['y'])
@@ -107,10 +103,9 @@ class ImpulseResponse(BaseTransformer):
         # Trim back to the original duration
         mudabox['y'] = mudabox['y'][:n]
 
-    def deform_times(self, annotation):
+    def deform_times(self, annotation, state):
         '''Apply group delay for the selected filter'''
 
-        state = self._state
         duration = pd.to_timedelta(state['duration'], unit='s')
 
         idx = state['index']

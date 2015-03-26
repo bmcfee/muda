@@ -98,8 +98,6 @@ class BackgroundNoise(BaseTransformer):
             files = [files]
 
         for fname in files:
-            if fname is None:
-                continue
             if not os.path.exists(fname):
                 raise RuntimeError('file not found: {}'.format(fname))
 
@@ -110,30 +108,21 @@ class BackgroundNoise(BaseTransformer):
         self.weight_min = weight_min
         self.weight_max = weight_max
 
-    def get_state(self, jam):
-        '''Build the noise state'''
+    def states(self, jam):
+        '''Iterate the background noise state'''
 
-        state = BaseTransformer.get_state(self, jam)
+        for fname in self.files:
+            for _ in range(self.n_samples):
+                yield dict(filename=fname,
+                           weight=np.random.uniform(low=self.weight_min,
+                                                    high=self.weight_max,
+                                                    size=None))
 
-        if not len(self._state):
-            state['files'] = self.files
-            state['index'] = 0
-        else:
-            state.update(self._state)
-            state['index'] += 1
-
-        state['weight'] = np.random.uniform(low=self.weight_min,
-                                            high=self.weight_max,
-                                            size=None)
-        return state
-
-    def audio(self, mudabox):
+    def audio(self, mudabox, state):
         '''Deform the audio'''
 
-        idx = self._state['index']
-        weight = self._state['weight']
-
-        fname = self.files[idx % len(self.files)]
+        weight = state['weight']
+        fname = state['filename']
 
         noise = sample_clip(fname, len(mudabox['y']), mudabox['sr'],
                             mono=mudabox['y'].ndim == 1)

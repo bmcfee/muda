@@ -35,27 +35,15 @@ class Resample(BaseTransformer):
 
         self.rates = rates
         self.res_type = res_type
-        self.n_samples = len(rates)
 
-    def get_state(self, jam):
-        '''Build the resampling state'''
+    def states(self, jam):
+        for rate in self.rates:
+            yield dict(resample_rate=rate)
 
-        state = BaseTransformer.get_state(self, jam)
-
-        if not len(self._state):
-            state['rates'] = list(self.rates)
-            state['index'] = 0
-        else:
-            state.update(self._state)
-            state['index'] += 1
-
-        state['resample_rate'] = state['rates'][state['index']]
-        return state
-
-    def audio(self, mudabox):
+    def audio(self, mudabox, state):
         '''Deform the audio by resampling'''
 
-        sr = self._state['resample_rate']
+        sr = state['resample_rate']
 
         y = librosa.resample(mudabox['y'], mudabox['sr'],
                              sr, res_type=self.res_type)

@@ -107,21 +107,13 @@ class DynamicRangeCompression(BaseTransformer):
             assert p in PRESETS
 
         self.preset = preset
-        self.n_samples = len(preset)
 
-    def get_state(self, jam):
-        state = BaseTransformer.get_state(self, jam)
+    def states(self, jam):
 
-        if not len(self._state):
-            state['index'] = 0
-        else:
-            state.update(self._state)
-            state['index'] += 1
+        for p in self.preset:
+            yield dict(preset=p)
 
-        return state
-
-    def audio(self, mudabox):
+    def audio(self, mudabox, state):
         '''Deform the audio'''
 
-        index = self._state['index']
-        mudabox['y'] = drc(mudabox['y'], mudabox['sr'], self.preset[index])
+        mudabox['y'] = drc(mudabox['y'], mudabox['sr'], state['preset'])

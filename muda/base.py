@@ -6,7 +6,6 @@ from collections import OrderedDict
 
 import inspect
 
-from contextlib import contextmanager
 from sklearn.base import _pprint
 
 import six
@@ -76,21 +75,12 @@ class BaseTransformer(object):
     def __init__(self):
         '''Base-class initialization'''
         self.dispatch = OrderedDict()
-        self._state = dict()
 
-        self.n_samples = 1
+    def states(self, jam):
+        '''Iterate the state object for a static transformer'''
+        yield dict()
 
-    def get_state(self, jam):
-        '''Build the state object for a static transformer'''
-        return dict()
-
-    @contextmanager
-    def _transform_state(self, jam):
-        '''Initialize state for static transformers.'''
-        self._state = self.get_state(jam)
-        yield
-
-    def _transform(self, jam):
+    def _transform(self, jam, state):
         '''Apply the transformation to audio and annotations.
 
         The input jam is copied and modified, and returned
@@ -117,23 +107,22 @@ class BaseTransformer(object):
         # We'll need a working copy of this object for modification purposes
         jam_w = copy.deepcopy(jam)
 
-        with self._transform_state(jam_w):
-            # Push our reconstructor onto the history stack
-            jam_w.sandbox.muda['history'].append({'transformer': self.__serialize__,
-                                                  'state': self._state})
+        # Push our reconstructor onto the history stack
+        jam_w.sandbox.muda['history'].append({'transformer': self.__serialize__,
+                                              'state': state})
 
-            if hasattr(self, 'audio'):
-                self.audio(jam_w.sandbox.muda)
+        if hasattr(self, 'audio'):
+            self.audio(jam_w.sandbox.muda, state)
 
-            if hasattr(self, 'metadata'):
-                self.metadata(jam_w.file_metadata)
+        if hasattr(self, 'metadata'):
+            self.metadata(jam_w.file_metadata, state)
 
-            # Walk over the list of deformers
-            for query, function in six.iteritems(self.dispatch):
-                for matched_annotation in jam_w.search(namespace=query):
-                    function(matched_annotation)
+        # Walk over the list of deformers
+        for query, function in six.iteritems(self.dispatch):
+            for matched_annotation in jam_w.search(namespace=query):
+                function(matched_annotation, state)
 
-        return [jam_w]
+        return jam_w
 
     def transform(self, jam):
         '''Iterative transformation generator
@@ -152,17 +141,8 @@ class BaseTransformer(object):
             Iterator of transformed jams
         '''
 
-        # Reset the state
-        # XXX:    2015-03-25 22:37:15 by Brian McFee <brian.mcfee@nyu.edu>
-        # this should be a context for state construction
-        #   within _transform, we should iterate over states in contexts
-        self._state = dict()
-
-        i = 0
-        while self.n_samples is None or i < self.n_samples:
-            for jam_out in self._transform(jam):
-                yield jam_out
-                i = i + 1
+        for state in self.states(jam):
+            yield self._transform(jam, state)
 
     @property
     def __serialize__(self):
