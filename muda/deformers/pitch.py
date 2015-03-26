@@ -60,39 +60,34 @@ class AbstractPitchShift(BaseTransformer):
         self.dispatch['key_mode|chord_harte'] = self.deform_note
         self.dispatch['melody_hz'] = self.deform_frequency
 
-    def get_state(self, jam):
-        '''Build the pitch shift state'''
+    def states(self, jam):
+        mudabox = jam.sandbox.muda
+        state = dict(tuning=librosa.estimate_tuning(y=mudabox['y'],
+                                                    sr=mudabox['sr']))
+        yield state
 
-        state = BaseTransformer.get_state(self, jam)
-
-        if 'tuning' not in state:
-            mudabox = jam.sandbox.muda
-            state['tuning'] = librosa.estimate_tuning(y=mudabox['y'],
-                                                      sr=mudabox['sr'])
-
-        return state
-
-    def audio(self, mudabox):
+    def audio(self, mudabox, state):
         '''Deform the audio'''
 
-        mudabox['y'] = pyrb.pitch_shift(mudabox['y'], mudabox['sr'],
-                                        self._state['n_semitones'])
+        mudabox['y'] = pyrb.pitch_shift(mudabox['y'],
+                                        mudabox['sr'],
+                                        state['n_semitones'])
 
-    def deform_frequency(self, annotation):
+    def deform_frequency(self, annotation, state):
         '''Deform frequency-valued annotations'''
 
-        annotation.data.value *= 2.0 ** (self._state['n_semitones'] / 12.0)
+        annotation.data.value *= 2.0 ** (state['n_semitones'] / 12.0)
 
-    def deform_note(self, annotation):
+    def deform_note(self, annotation, state):
         '''Deform note-valued annotations (chord or key)'''
 
         # First, figure out the tuning after deformation
-        if -0.5 <= (self._state['tuning'] + self._state['n_semitones']) < 0.5:
+        if -0.5 <= (state['tuning'] + state['n_semitones']) < 0.5:
             # If our tuning was off by more than the deformation,
             # then no label modification is necessary
             return
 
-        annotation.data.values = [transpose(l, self._state['n_semitones'])
+        annotation.data.values = [transpose(l, state['n_semitones'])
                                   for l in annotation.data.values]
 
 
@@ -111,9 +106,11 @@ class PitchShift(AbstractPitchShift):
         AbstractPitchShift.__init__(self)
         self.n_semitones = float(n_semitones)
 
-    def get_state(self, jam):
+    def states(self, jam):
 
-        return dict(n_semitones=self.n_semitones)
+        for state in AbstractPitchShift.states(self, jam):
+            state['n_semitones'] = self.n_semitones
+            yield state
 
 
 class RandomPitchShift(AbstractPitchShift):
@@ -145,16 +142,16 @@ class RandomPitchShift(AbstractPitchShift):
         self.mean = float(mean)
         self.sigma = float(sigma)
 
-    def get_state(self, jam):
+    def states(self, jam):
         '''Get the randomized state for this transformation instance'''
 
-        state = AbstractPitchShift.get_state(self, jam)
-
         # Sample the deformation
-        state['n_semitones'] = np.random.normal(loc=self.mean,
-                                                scale=self.sigma,
-                                                size=None)
-        return state
+        for state in AbstractPitchShift.states(self, jam):
+            for _ in range(self.n_samples):
+                state['n_semitones'] = np.random.normal(loc=self.mean,
+                                                        scale=self.sigma,
+                                                        size=None)
+                yield state
 
 
 class LinearPitchShift(AbstractPitchShift):
@@ -174,27 +171,15 @@ class LinearPitchShift(AbstractPitchShift):
         self.lower = float(lower)
         self.upper = float(upper)
 
-    def get_state(self, jam):
+    def states(self, jam):
         '''Set the state for the transformation object'''
 
-        state = dict()
-        state.update(self._state)
+        shifts = np.linspace(self.lower,
+                             self.upper,
+                             num=self.n_samples,
+                             endpoint=True)
 
-        if not len(state):
-            # Get the tuning
-            state = AbstractPitchShift.get_state(self, jam)
-
-            shifts = np.linspace(self.lower,
-                                 self.upper,
-                                 num=self.n_samples,
-                                 endpoint=True)
-
-            state['shifts'] = list(shifts)
-            state['index'] = 0
-
-        else:
-            state['index'] = (state['index'] + 1) % len(state['shifts'])
-
-        state['n_semitones'] = state['shifts'][state['index']]
-
-        return state
+        for state in AbstractPitchShift.states(self, jam):
+            for n_semitones in shifts:
+                state['n_semitones'] = n_semitones
+                yield state
