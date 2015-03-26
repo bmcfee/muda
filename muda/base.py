@@ -3,12 +3,10 @@
 
 import copy
 from collections import OrderedDict
-
+import six
 import inspect
 
 from sklearn.base import _pprint
-
-import six
 
 
 class BaseTransformer(object):

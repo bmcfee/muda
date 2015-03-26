@@ -35,6 +35,7 @@ setup(
         'pysoundfile',
         'sklearn',
         'six',
+        'jsonpickle',
     ],
     extras_require={
         'docs': ['numpydoc']

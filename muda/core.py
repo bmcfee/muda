@@ -6,6 +6,9 @@
 import jams
 import librosa
 import pysoundfile as psf
+import jsonpickle
+
+import six
 
 from .base import *
 import warnings
@@ -96,3 +99,75 @@ def save(filename_audio, filename_jam, jam, strict=True, **kwargs):
 
     # Then dump the jam
     jam.save(filename_jam, strict=strict)
+
+
+def __reconstruct(params):
+    '''Reconstruct a transformation or pipeline given a parameter dump.'''
+
+    if isinstance(params, dict):
+        if '__class__' in params:
+            cls = params['__class__']
+            data = __reconstruct(params['params'])
+            return cls(**data)
+        else:
+            data = dict()
+            for k, v in six.iteritems(params):
+                data[k] = __reconstruct(v)
+            return data
+
+    elif isinstance(params, (list, tuple)):
+        return [__reconstruct(v) for v in params]
+
+    else:
+        return params
+
+
+def serialize(transform, **kwargs):
+    '''Serialize a transformation object or pipeline.
+
+    Parameters
+    ----------
+    transform : BaseTransform or Pipeline
+        The transformation object to be serialized
+
+    kwargs
+        Additional keyword arguments to `jsonpickle.encode()`
+
+    Returns
+    -------
+    json_str : str
+        A JSON encoding of the transformation
+
+    See Also
+    --------
+    deserialize
+    '''
+
+    params = transform.get_params()
+    return jsonpickle.encode(params, **kwargs)
+
+
+def deserialize(encoded, **kwargs):
+    '''Construct a muda transformation from a JSON encoded string.
+
+    Parameters
+    ----------
+    encoded : str
+        JSON encoding of the transformation or pipeline
+
+    kwargs
+        Additional keyword arguments to `jsonpickle.decode()`
+
+    Returns
+    -------
+    obj
+        The transformation
+
+    See Also
+    --------
+    serialize
+    '''
+
+    params = jsonpickle.decode(encoded, **kwargs)
+
+    return __reconstruct(params)
