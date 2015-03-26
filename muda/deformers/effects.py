@@ -35,20 +35,10 @@ class Resample(BaseTransformer):
 
         self.rates = rates
         self.res_type = res_type
-        self.n_samples = len(rates)
 
-    def init_state(self, jam):
-        '''Build the resampling state'''
-
-        state = dict(index=-1)
-        return self.next_state(jam, state)
-
-    def next_state(self, jam, state):
-        '''Update the resampling state'''
-
-        state['index'] += 1
-        state['resample_rate'] = self.rates[state['index']]
-        return state
+    def states(self, jam):
+        for rate in self.rates:
+            yield dict(resample_rate=rate)
 
     def audio(self, mudabox, state):
         '''Deform the audio by resampling'''
