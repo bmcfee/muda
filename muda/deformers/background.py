@@ -110,28 +110,25 @@ class BackgroundNoise(BaseTransformer):
         self.weight_min = weight_min
         self.weight_max = weight_max
 
-    def get_state(self, jam):
+    def init_state(self, jam):
         '''Build the noise state'''
 
-        state = BaseTransformer.get_state(self, jam)
+        state = dict(index=-1)
+        return self.next_state(jam, state)
 
-        if not len(self._state):
-            state['files'] = self.files
-            state['index'] = 0
-        else:
-            state.update(self._state)
-            state['index'] += 1
+    def next_state(self, jam, state):
 
+        state['index'] += 1
         state['weight'] = np.random.uniform(low=self.weight_min,
                                             high=self.weight_max,
                                             size=None)
         return state
 
-    def audio(self, mudabox):
+    def audio(self, mudabox, state):
         '''Deform the audio'''
 
-        idx = self._state['index']
-        weight = self._state['weight']
+        idx = state['index']
+        weight = state['weight']
 
         fname = self.files[idx % len(self.files)]
 
