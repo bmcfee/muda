@@ -82,7 +82,7 @@ class BaseTransformer(object):
 
     def get_state(self, jam):
         '''Build the state object for a static transformer'''
-        return self.get_params()
+        return dict()
 
     @contextmanager
     def _transform_state(self, jam):
@@ -119,7 +119,7 @@ class BaseTransformer(object):
 
         with self._transform_state(jam_working):
             # Push our reconstructor onto the history stack
-            jam_working.sandbox.muda['history'].append({'transformer': self.__json__,
+            jam_working.sandbox.muda['history'].append({'transformer': self.__serialize__,
                                                         'state': self._state})
 
             if hasattr(self, 'audio'):
@@ -161,14 +161,13 @@ class BaseTransformer(object):
                 yield jam_out
                 i = i + 1
 
-        # Reset the state
-        self._state = dict()
-
     @property
-    def __json__(self):
+    def __serialize__(self):
         '''Serializer'''
 
-        return self.get_params()
+        data = self.get_params()
+        data['__class__'] = data['__class__'].__name__
+        return data
 
 
 class Pipeline(object):

@@ -65,8 +65,8 @@ class AbstractPitchShift(BaseTransformer):
 
         state = BaseTransformer.get_state(self, jam)
 
-        mudabox = jam.sandbox.muda
         if 'tuning' not in state:
+            mudabox = jam.sandbox.muda
             state['tuning'] = librosa.estimate_tuning(y=mudabox['y'],
                                                       sr=mudabox['sr'])
 
@@ -110,6 +110,10 @@ class PitchShift(AbstractPitchShift):
 
         AbstractPitchShift.__init__(self)
         self.n_semitones = float(n_semitones)
+
+    def get_state(self, jam):
+
+        return dict(n_semitones=self.n_semitones)
 
 
 class RandomPitchShift(AbstractPitchShift):
