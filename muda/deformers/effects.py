@@ -45,7 +45,7 @@ class Resample(BaseTransformer):
 
         sr = state['resample_rate']
 
-        y = librosa.resample(mudabox['y'], mudabox['sr'],
+        y = librosa.resample(mudabox._audio['y'], mudabox._audio['sr'],
                              sr, res_type=self.res_type)
-        mudabox['y'] = librosa.resample(y, sr, mudabox['sr'],
-                                        res_type=self.res_type)
+        mudabox._audio['y'] = librosa.resample(y, sr, mudabox._audio['sr'],
+                                               res_type=self.res_type)
