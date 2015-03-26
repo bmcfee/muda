@@ -34,30 +34,30 @@ class AbstractTimeStretch(BaseTransformer):
         self.dispatch['.*'] = self.deform_times
         self.dispatch['tempo'] = self.deform_tempo
 
-    def audio(self, mudabox):
+    def audio(self, mudabox, state):
         '''Deform the audio and metadata'''
         mudabox['y'] = pyrb.time_stretch(mudabox['y'], mudabox['sr'],
-                                         self._state['rate'])
+                                         state['rate'])
 
-    def metadata(self, metadata):
+    def metadata(self, metadata, state):
         '''Deform the metadata'''
-        metadata.duration /= self._state['rate']
+        metadata.duration /= state['rate']
 
-    def deform_tempo(self, annotation):
+    def deform_tempo(self, annotation, state):
         '''Deform a tempo annotation'''
 
-        annotation.data.value *= self._state['rate']
+        annotation.data.value *= state['rate']
 
-    def deform_times(self, annotation):
+    def deform_times(self, ann, state):
         '''Deform time values for all annotations.'''
 
-        annotation.data.time = [pd.to_timedelta(x.total_seconds() / self._state['rate'],
-                                                unit='s')
-                                for x in annotation.data.time]
+        ann.data.time = [pd.to_timedelta(x.total_seconds() / state['rate'],
+                                         unit='s')
+                         for x in ann.data.time]
 
-        annotation.data.duration = [pd.to_timedelta(x.total_seconds() / self._state['rate'],
-                                                    unit='s')
-                                    for x in annotation.data.duration]
+        ann.data.duration = [pd.to_timedelta(x.total_seconds() / state['rate'],
+                                             unit='s')
+                             for x in ann.data.duration]
 
 
 class TimeStretch(AbstractTimeStretch):
@@ -78,6 +78,9 @@ class TimeStretch(AbstractTimeStretch):
         self.rate = float(rate)
         if rate <= 0:
             raise ValueError('rate parameter must be strictly positive.')
+
+    def states(self, jam):
+        yield dict(rate=self.rate)
 
 
 class LogspaceTimeStretch(AbstractTimeStretch):
@@ -100,27 +103,16 @@ class LogspaceTimeStretch(AbstractTimeStretch):
         self.lower = float(lower)
         self.upper = float(upper)
 
-    def get_state(self, jam):
+    def states(self, jam):
         '''Set the state for the transformation object.'''
 
-        state = dict()
-        state.update(self._state)
+        rates = 2.0**np.linspace(self.lower,
+                                 self.upper,
+                                 num=self.n_samples,
+                                 endpoint=True)
 
-        if not len(state):
-            times = 2.0**np.linspace(self.lower,
-                                     self.upper,
-                                     num=self.n_samples,
-                                     endpoint=True)
-
-            state['times'] = list(times)
-            state['index'] = 0
-
-        else:
-            state['index'] = (state['index'] + 1) % len(state['times'])
-
-        state['rate'] = state['times'][state['index']]
-
-        return state
+        for rate in rates:
+            yield dict(rate=rate)
 
 
 class RandomTimeStretch(AbstractTimeStretch):
@@ -144,20 +136,19 @@ class RandomTimeStretch(AbstractTimeStretch):
         self.location = location
         self.scale = scale
 
-        # Build the annotation mappers
-        self.dispatch['.*'] = self.deform_times
-        self.dispatch['tempo'] = self.deform_tempo
-
-    def get_state(self, jam):
+    def states(self, jam):
         '''Set the state for a transformation object.
 
         For a random time stretch, this corresponds to sampling
         from the stretch distribution.
         '''
 
-        return dict(rate=list(np.random.lognormal(mean=self.location,
-                                             sigma=self.scale,
-                                             size=None)))
+        rates = np.random.lognormal(mean=self.location,
+                                    sigma=self.scale,
+                                    size=self.n_samples)
+
+        for rate in rates:
+            yield dict(rate=rate)
 
 
 class AnnotationBlur(BaseTransformer):
@@ -200,27 +191,25 @@ class AnnotationBlur(BaseTransformer):
 
         self.dispatch['.*'] = self.deform_annotation
 
-    def get_state(self, jam):
+    def states(self, jam):
         '''Get the state information from the jam'''
 
-        state = BaseTransformer.get_state(self, jam)
-
+        state = dict()
         state['duration'] = librosa.get_duration(y=jam.sandbox.muda['y'],
                                                  sr=jam.sandbox.muda['sr'])
+        yield state
 
-        return state
-
-    def deform_annotation(self, annotation):
+    def deform_annotation(self, annotation, state):
         '''Deform the annotation'''
 
-        track_duration = self._state['duration']
+        track_duration = state['duration']
 
         # Get the time in seconds
         t = np.asarray([x.total_seconds() for x in annotation.data.time])
         if self.time:
             # Deform
-            t += np.random.normal(loc=self._state['mean'],
-                                  scale=self._state['sigma'],
+            t += np.random.normal(loc=self.mean,
+                                  scale=self.sigma,
                                   size=t.shape)
 
         # Clip to the track duration
@@ -231,8 +220,8 @@ class AnnotationBlur(BaseTransformer):
         d = np.asarray([x.total_seconds() for x in annotation.data.duration])
         if self.duration:
             # Deform
-            d += np.random.normal(loc=self._state['mean'],
-                                  scale=self._state['sigma'],
+            d += np.random.normal(loc=self.mean,
+                                  scale=self.sigma,
                                   size=d.shape)
 
         # Clip to the track duration - interval start
@@ -276,55 +265,43 @@ class Splitter(BaseTransformer):
 
         self.dispatch['.*'] = self.crop_times
 
-    def get_state(self, jam):
+    def states(self, jam):
         '''Set the state for the transformation object'''
 
         state = dict()
-        state.update(self._state)
 
-        if not len(state):
-            mudabox = jam.sandbox.muda
+        mudabox = jam.sandbox.muda
 
-            state['duration'] = librosa.get_duration(y=mudabox['y'],
-                                                     sr=mudabox['sr'])
+        state['track_duration'] = librosa.get_duration(y=mudabox['y'],
+                                                       sr=mudabox['sr'])
 
-            state['offset'] = list(np.arange(start=0,
-                                             stop=(state['duration'] -
-                                                   self.min_duration),
-                                             step=self.stride))
-            state['index'] = 0
-            self.n_samples = len(state['offset'])
+        offsets = np.arange(start=0,
+                            stop=(state['track_duration'] - self.min_duration),
+                            step=self.stride)
 
-        else:
-            state['index'] += 1
+        for t in offsets:
+            state['offset'] = t
+            yield state
 
-        return state
-
-    def metadata(self, metadata):
+    def metadata(self, metadata, state):
         '''Adjust the metadata'''
 
-        state = self._state
         metadata.duration = np.minimum(self.duration,
-                                       state['duration'] -
-                                       state['offset'][state['index']])
+                                       state['track_duration'] - state['offset'])
 
-    def audio(self, mudabox):
+    def audio(self, mudabox, state):
         '''Crop the audio'''
 
-        state = self._state
-        offset_idx = int(state['offset'][state['index']] * mudabox['sr'])
+        offset_idx = int(state['offset'] * mudabox['sr'])
         duration = int(self.duration * mudabox['sr'])
 
         mudabox['y'] = mudabox['y'][offset_idx:offset_idx + duration]
 
-    def crop_times(self, annotation):
+    def crop_times(self, annotation, state):
         '''Crop the annotation object'''
 
-        state = self._state
-
         # Convert timings to td64
-        min_time = pd.to_timedelta(state['offset'][state['index']],
-                                   unit='s')
+        min_time = pd.to_timedelta(state['offset'], unit='s')
         duration = pd.to_timedelta(self.duration, unit='s')
 
         # Get all the rows where
