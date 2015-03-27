@@ -18,6 +18,7 @@ __all__ = ['DynamicRangeCompression', 'PRESETS']
 
 # Presets pulled from
 # https://web.archive.org/web/20140828122713/http://forum.doom9.org/showthread.php?t=165807
+# and http://forum.doom9.org/showthread.php?p=779165#post779165
 PRESETS = json.load(open(resource_filename(__name__, 'data/drc_presets.json')))
 
 
