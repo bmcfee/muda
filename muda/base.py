@@ -78,6 +78,10 @@ class BaseTransformer(object):
         '''Iterate the state object for a static transformer'''
         yield dict()
 
+    def _register(self, pattern, function):
+        '''Register a deformation function against a namespace pattern'''
+        self.dispatch[pattern] = function.__name__
+
     def _transform(self, jam, state):
         '''Apply the transformation to audio and annotations.
 
@@ -116,7 +120,8 @@ class BaseTransformer(object):
             self.metadata(jam_w.file_metadata, state)
 
         # Walk over the list of deformers
-        for query, function in six.iteritems(self.dispatch):
+        for query, function_name in six.iteritems(self.dispatch):
+            function = getattr(self, function_name)
             for matched_annotation in jam_w.search(namespace=query):
                 function(matched_annotation, state)
 

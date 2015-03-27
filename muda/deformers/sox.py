@@ -114,7 +114,8 @@ class DynamicRangeCompression(BaseTransformer):
         for p in self.preset:
             yield dict(preset=p)
 
-    def audio(self, mudabox, state):
+    @staticmethod
+    def audio(mudabox, state):
         '''Deform the audio'''
 
         mudabox._audio['y'] = drc(mudabox._audio['y'],

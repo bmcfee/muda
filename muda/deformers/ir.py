@@ -49,7 +49,7 @@ def mean_group_delay(y, sr=22050, n_fft=2048):
 class ImpulseResponse(BaseTransformer):
     '''Impulse response filtering'''
 
-    def __init__(self, files=None):
+    def __init__(self, files=None, estimate_delay=False):
         '''Impulse response filtering
 
         Parameters
@@ -65,14 +65,17 @@ class ImpulseResponse(BaseTransformer):
 
         BaseTransformer.__init__(self)
         self.files = files
+        self.estimate_delay = estimate_delay
 
         self.ir_ = []
         self.delay_ = []
         for fname in files:
             self.ir_.append(librosa.load(fname)[0])
-            self.delay_.append(mean_group_delay(self.ir_[-1]))
+            self.delay_.append(0.0)
+            if estimate_delay:
+                self.delay_[-1] = mean_group_delay(self.ir_[-1])
 
-        self.dispatch['.*'] = self.deform_times
+        self._register('.*', self.deform_times)
 
     def states(self, jam):
         '''Iterate the impulse respones states'''

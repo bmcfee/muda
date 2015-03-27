@@ -31,25 +31,29 @@ class AbstractTimeStretch(BaseTransformer):
         BaseTransformer.__init__(self)
 
         # Build the annotation mappers
-        self.dispatch['.*'] = self.deform_times
-        self.dispatch['tempo'] = self.deform_tempo
+        self._register('.*', self.deform_times)
+        self._register('tempo', self.deform_tempo)
 
-    def audio(self, mudabox, state):
+    @staticmethod
+    def audio(mudabox, state):
         '''Deform the audio and metadata'''
         mudabox._audio['y'] = pyrb.time_stretch(mudabox._audio['y'],
                                                 mudabox._audio['sr'],
                                                 state['rate'])
 
-    def metadata(self, metadata, state):
+    @staticmethod
+    def metadata(metadata, state):
         '''Deform the metadata'''
         metadata.duration /= state['rate']
 
-    def deform_tempo(self, annotation, state):
+    @staticmethod
+    def deform_tempo(annotation, state):
         '''Deform a tempo annotation'''
 
         annotation.data.value *= state['rate']
 
-    def deform_times(self, ann, state):
+    @staticmethod
+    def deform_times(ann, state):
         '''Deform time values for all annotations.'''
 
         ann.data.time = [pd.to_timedelta(x.total_seconds() / state['rate'],
@@ -190,7 +194,7 @@ class AnnotationBlur(BaseTransformer):
         self.time = time
         self.duration = duration
 
-        self.dispatch['.*'] = self.deform_annotation
+        self._register('.*', self.deform_annotation)
 
     def states(self, jam):
         '''Get the state information from the jam'''
@@ -265,7 +269,7 @@ class Splitter(BaseTransformer):
         self.stride = stride
         self.min_duration = min_duration
 
-        self.dispatch['.*'] = self.crop_times
+        self._register('.*', self.crop_times)
 
     def states(self, jam):
         '''Set the state for the transformation object'''
@@ -289,7 +293,8 @@ class Splitter(BaseTransformer):
         '''Adjust the metadata'''
 
         metadata.duration = np.minimum(self.duration,
-                                       state['track_duration'] - state['offset'])
+                                       (state['track_duration'] -
+                                        state['offset']))
 
     def audio(self, mudabox, state):
         '''Crop the audio'''
@@ -297,7 +302,8 @@ class Splitter(BaseTransformer):
         offset_idx = int(state['offset'] * mudabox._audio['sr'])
         duration = int(self.duration * mudabox._audio['sr'])
 
-        mudabox._audio['y'] = mudabox._audio['y'][offset_idx:offset_idx + duration]
+        mudabox._audio['y'] = mudabox._audio['y'][offset_idx:offset_idx +
+                                                  duration]
 
     def crop_times(self, annotation, state):
         '''Crop the annotation object'''

@@ -57,8 +57,8 @@ class AbstractPitchShift(BaseTransformer):
         BaseTransformer.__init__(self)
 
         # Build the annotation mapping
-        self.dispatch['key_mode|chord_harte'] = self.deform_note
-        self.dispatch['melody_hz'] = self.deform_frequency
+        self._register('key_mode|chord_harte', self.deform_note)
+        self._register('melody_hz', self.deform_frequency)
 
     def states(self, jam):
         mudabox = jam.sandbox.muda
@@ -66,19 +66,22 @@ class AbstractPitchShift(BaseTransformer):
                                                     sr=mudabox._audio['sr']))
         yield state
 
-    def audio(self, mudabox, state):
+    @staticmethod
+    def audio(mudabox, state):
         '''Deform the audio'''
 
         mudabox._audio['y'] = pyrb.pitch_shift(mudabox._audio['y'],
                                                mudabox._audio['sr'],
                                                state['n_semitones'])
 
-    def deform_frequency(self, annotation, state):
+    @staticmethod
+    def deform_frequency(annotation, state):
         '''Deform frequency-valued annotations'''
 
         annotation.data.value *= 2.0 ** (state['n_semitones'] / 12.0)
 
-    def deform_note(self, annotation, state):
+    @staticmethod
+    def deform_note(annotation, state):
         '''Deform note-valued annotations (chord or key)'''
 
         # First, figure out the tuning after deformation
