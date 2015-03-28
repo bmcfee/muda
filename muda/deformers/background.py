@@ -44,7 +44,7 @@ def sample_clip(filename, n_samples, sr, mono=True):
 
     '''
 
-    with psf.SoundFile(filename, mode='r') as soundf:
+    with psf.SoundFile(str(filename), mode='r') as soundf:
 
         n_target = int(np.ceil(n_samples * soundf.samplerate / sr))
 
