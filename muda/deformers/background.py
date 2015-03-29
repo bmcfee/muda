@@ -55,16 +55,16 @@ def sample_clip(filename, n_samples, sr, mono=True):
 
         y = soundf.read(n_target).T
 
-    if mono:
-        y = librosa.to_mono(y)
+        if mono:
+            y = librosa.to_mono(y)
 
-    # Resample to initial sr
-    y = librosa.resample(y, soundf.samplerate, sr)
+        # Resample to initial sr
+        y = librosa.resample(y, soundf.samplerate, sr)
 
-    # Clip to the target length exactly
-    y = librosa.util.fix_length(y, n_samples)
+        # Clip to the target length exactly
+        y = librosa.util.fix_length(y, n_samples)
 
-    return y
+        return y
 
 
 class BackgroundNoise(BaseTransformer):
