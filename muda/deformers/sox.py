@@ -53,7 +53,7 @@ def __sox(y, sr, *args):
     librosa.output.write_wav(infile, y, sr)
 
     try:
-        arguments = ['sox', infile, outfile]
+        arguments = ['sox', infile, outfile, '-q']
         arguments.extend(args)
 
         subprocess.check_call(arguments)
