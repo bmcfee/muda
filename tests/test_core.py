@@ -9,6 +9,10 @@ import muda
 import jams
 import librosa
 
+import tempfile
+import os
+
+from nose.tools import eq_, raises
 
 def test_jam_pack():
 
@@ -44,3 +48,23 @@ def test_load_jam_audio():
 
     with open('data/fixture.jams', 'r') as fdesc:
         yield __test, fdesc, 'data/fixture.wav'
+
+
+def test_save():
+
+    jam = muda.load_jam_audio('data/fixture.jams', 'data/fixture.wav')
+
+    _, audfile = tempfile.mkstemp(suffix='.wav')
+    _, jamfile = tempfile.mkstemp(suffix='.jams')
+
+    muda.save(audfile, jamfile, jam)
+
+    jam2 = muda.load_jam_audio(jamfile, audfile)
+    jam2_raw = jams.load(jamfile)
+
+    assert hasattr(jam.sandbox, 'muda')
+    assert jam.file_metadata.duration == librosa.get_duration(**jam.sandbox.muda._audio)
+
+    os.unlink(audfile)
+    os.unlink(jamfile)
+
