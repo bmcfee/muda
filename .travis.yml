@@ -7,6 +7,7 @@ addons:
     packages:
     - rubberband-cli
     - ffmpeg
+    - libsndfile1
 
 cache:
   directories:
