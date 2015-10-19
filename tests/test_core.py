@@ -40,7 +40,8 @@ def test_load_jam_audio():
 
         assert hasattr(jam.sandbox, 'muda')
 
-        assert jam.file_metadata.duration == librosa.get_duration(**jam.sandbox.muda._audio)
+        eq_(jam.file_metadata.duration,
+            librosa.get_duration(**jam.sandbox.muda._audio))
 
     yield __test, 'data/fixture.jams', 'data/fixture.wav'
 
@@ -52,19 +53,26 @@ def test_load_jam_audio():
 
 def test_save():
 
-    jam = muda.load_jam_audio('data/fixture.jams', 'data/fixture.wav')
+    jam = muda.load_jam_audio('data/fixture.jams',
+                              'data/fixture.wav')
 
-    _, audfile = tempfile.mkstemp(suffix='.wav')
     _, jamfile = tempfile.mkstemp(suffix='.jams')
+    _, audfile = tempfile.mkstemp(suffix='.wav')
 
     muda.save(audfile, jamfile, jam)
 
     jam2 = muda.load_jam_audio(jamfile, audfile)
     jam2_raw = jams.load(jamfile)
 
-    assert hasattr(jam.sandbox, 'muda')
-    assert jam.file_metadata.duration == librosa.get_duration(**jam.sandbox.muda._audio)
-
     os.unlink(audfile)
     os.unlink(jamfile)
+
+    assert hasattr(jam2.sandbox, 'muda')
+    assert '_audio' in jam2.sandbox.muda
+    assert '_audio' not in jam2_raw.sandbox.muda
+
+    eq_(jam2.file_metadata.duration,
+        librosa.get_duration(**jam2.sandbox.muda['_audio']))
+
+
 
