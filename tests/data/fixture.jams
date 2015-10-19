@@ -1,0 +1,469 @@
+{
+  "sandbox": {}, 
+  "annotations": [
+    {
+      "namespace": "chord", 
+      "sandbox": {}, 
+      "time": 0, 
+      "duration": 3.5, 
+      "annotation_metadata": {
+        "annotation_tools": "", 
+        "curator": {
+          "name": "", 
+          "email": ""
+        }, 
+        "annotator": {}, 
+        "version": "", 
+        "corpus": "", 
+        "annotation_rules": "", 
+        "validation": "", 
+        "data_source": ""
+      }, 
+      "data": [
+        {
+          "duration": 0.5, 
+          "confidence": null, 
+          "value": "C:1", 
+          "time": 0.0
+        }, 
+        {
+          "duration": 0.5, 
+          "confidence": null, 
+          "value": "D:1", 
+          "time": 0.5
+        }, 
+        {
+          "duration": 0.5, 
+          "confidence": null, 
+          "value": "E:1", 
+          "time": 1.0
+        }, 
+        {
+          "duration": 0.5, 
+          "confidence": null, 
+          "value": "F:1", 
+          "time": 1.5
+        }, 
+        {
+          "duration": 0.5, 
+          "confidence": null, 
+          "value": "G:1", 
+          "time": 2.0
+        }, 
+        {
+          "duration": 0.5, 
+          "confidence": null, 
+          "value": "A:1", 
+          "time": 2.5
+        }, 
+        {
+          "duration": 0.5, 
+          "confidence": null, 
+          "value": "B:1", 
+          "time": 3.0
+        }
+      ]
+    }, 
+    {
+      "namespace": "chord_harte", 
+      "sandbox": {}, 
+      "time": 0, 
+      "duration": 3.5, 
+      "annotation_metadata": {
+        "annotation_tools": "", 
+        "curator": {
+          "name": "", 
+          "email": ""
+        }, 
+        "annotator": {}, 
+        "version": "", 
+        "corpus": "", 
+        "annotation_rules": "", 
+        "validation": "", 
+        "data_source": ""
+      }, 
+      "data": [
+        {
+          "duration": 0.5, 
+          "confidence": null, 
+          "value": "C:maj(*3,*5)", 
+          "time": 0.0
+        }, 
+        {
+          "duration": 0.5, 
+          "confidence": null, 
+          "value": "D:maj(*3,*5)", 
+          "time": 0.5
+        }, 
+        {
+          "duration": 0.5, 
+          "confidence": null, 
+          "value": "E:maj(*3,*5)", 
+          "time": 1.0
+        }, 
+        {
+          "duration": 0.5, 
+          "confidence": null, 
+          "value": "F:maj(*3,*5)", 
+          "time": 1.5
+        }, 
+        {
+          "duration": 0.5, 
+          "confidence": null, 
+          "value": "G:maj(*3,*5)", 
+          "time": 2.0
+        }, 
+        {
+          "duration": 0.5, 
+          "confidence": null, 
+          "value": "A:maj(*3,*5)", 
+          "time": 2.5
+        }, 
+        {
+          "duration": 0.5, 
+          "confidence": null, 
+          "value": "B:maj(*3,*5)", 
+          "time": 3.0
+        }
+      ]
+    }, 
+    {
+      "namespace": "chord_roman", 
+      "sandbox": {}, 
+      "time": 0, 
+      "duration": 3.5, 
+      "annotation_metadata": {
+        "annotation_tools": "", 
+        "curator": {
+          "name": "", 
+          "email": ""
+        }, 
+        "annotator": {}, 
+        "version": "", 
+        "corpus": "", 
+        "annotation_rules": "", 
+        "validation": "", 
+        "data_source": ""
+      }, 
+      "data": [
+        {
+          "duration": 0.5, 
+          "confidence": null, 
+          "value": {
+            "tonic": "C", 
+            "chord": "I"
+          }, 
+          "time": 0.0
+        }, 
+        {
+          "duration": 0.5, 
+          "confidence": null, 
+          "value": {
+            "tonic": "C", 
+            "chord": "ii"
+          }, 
+          "time": 0.5
+        }, 
+        {
+          "duration": 0.5, 
+          "confidence": null, 
+          "value": {
+            "tonic": "C", 
+            "chord": "iii"
+          }, 
+          "time": 1.0
+        }, 
+        {
+          "duration": 0.5, 
+          "confidence": null, 
+          "value": {
+            "tonic": "C", 
+            "chord": "iv"
+          }, 
+          "time": 1.5
+        }, 
+        {
+          "duration": 0.5, 
+          "confidence": null, 
+          "value": {
+            "tonic": "C", 
+            "chord": "V"
+          }, 
+          "time": 2.0
+        }, 
+        {
+          "duration": 0.5, 
+          "confidence": null, 
+          "value": {
+            "tonic": "C", 
+            "chord": "vi"
+          }, 
+          "time": 2.5
+        }, 
+        {
+          "duration": 0.5, 
+          "confidence": null, 
+          "value": {
+            "tonic": "C", 
+            "chord": "VII"
+          }, 
+          "time": 3.0
+        }
+      ]
+    }, 
+    {
+      "namespace": "key_mode", 
+      "sandbox": {}, 
+      "time": 0, 
+      "duration": 3.5, 
+      "annotation_metadata": {
+        "annotation_tools": "", 
+        "curator": {
+          "name": "", 
+          "email": ""
+        }, 
+        "annotator": {}, 
+        "version": "", 
+        "corpus": "", 
+        "annotation_rules": "", 
+        "validation": "", 
+        "data_source": ""
+      }, 
+      "data": [
+        {
+          "duration": 3.5, 
+          "confidence": 1.0, 
+          "value": "C:major", 
+          "time": 0.0
+        }
+      ]
+    }, 
+    {
+      "namespace": "pitch_class", 
+      "sandbox": {}, 
+      "time": 0, 
+      "duration": 3.5, 
+      "annotation_metadata": {
+        "annotation_tools": "", 
+        "curator": {
+          "name": "", 
+          "email": ""
+        }, 
+        "annotator": {}, 
+        "version": "", 
+        "corpus": "", 
+        "annotation_rules": "", 
+        "validation": "", 
+        "data_source": ""
+      }, 
+      "data": {
+        "duration": [
+          0.5, 
+          0.5, 
+          0.5, 
+          0.5, 
+          0.5, 
+          0.5, 
+          0.5
+        ], 
+        "confidence": [
+          null, 
+          null, 
+          null, 
+          null, 
+          null, 
+          null, 
+          null
+        ], 
+        "value": [
+          {
+            "tonic": "C", 
+            "pitch": 1
+          }, 
+          {
+            "tonic": "C", 
+            "pitch": 2
+          }, 
+          {
+            "tonic": "C", 
+            "pitch": 3
+          }, 
+          {
+            "tonic": "C", 
+            "pitch": 4
+          }, 
+          {
+            "tonic": "C", 
+            "pitch": 5
+          }, 
+          {
+            "tonic": "C", 
+            "pitch": 6
+          }, 
+          {
+            "tonic": "C", 
+            "pitch": 7
+          }
+        ], 
+        "time": [
+          0.0, 
+          0.5, 
+          1.0, 
+          1.5, 
+          2.0, 
+          2.5, 
+          3.0
+        ]
+      }
+    }, 
+    {
+      "namespace": "pitch_hz", 
+      "sandbox": {}, 
+      "time": 0, 
+      "duration": 3.5, 
+      "annotation_metadata": {
+        "annotation_tools": "", 
+        "curator": {
+          "name": "", 
+          "email": ""
+        }, 
+        "annotator": {}, 
+        "version": "", 
+        "corpus": "", 
+        "annotation_rules": "", 
+        "validation": "", 
+        "data_source": ""
+      }, 
+      "data": {
+        "duration": [
+          0.5, 
+          0.5, 
+          0.5, 
+          0.5, 
+          0.5, 
+          0.5, 
+          0.5
+        ], 
+        "confidence": [
+          NaN, 
+          NaN, 
+          NaN, 
+          NaN, 
+          NaN, 
+          NaN, 
+          NaN
+        ], 
+        "value": [
+          130.81278265029931, 
+          146.83238395870379, 
+          164.81377845643496, 
+          174.61411571650194, 
+          195.99771799087463, 
+          220.0, 
+          246.94165062806206
+        ], 
+        "time": [
+          0.0, 
+          0.5, 
+          1.0, 
+          1.5, 
+          2.0, 
+          2.5, 
+          3.0
+        ]
+      }
+    }, 
+    {
+      "namespace": "pitch_midi", 
+      "sandbox": {}, 
+      "time": 0, 
+      "duration": 3.5, 
+      "annotation_metadata": {
+        "annotation_tools": "", 
+        "curator": {
+          "name": "", 
+          "email": ""
+        }, 
+        "annotator": {}, 
+        "version": "", 
+        "corpus": "", 
+        "annotation_rules": "", 
+        "validation": "", 
+        "data_source": ""
+      }, 
+      "data": {
+        "duration": [
+          0.5, 
+          0.5, 
+          0.5, 
+          0.5, 
+          0.5, 
+          0.5, 
+          0.5
+        ], 
+        "confidence": [
+          NaN, 
+          NaN, 
+          NaN, 
+          NaN, 
+          NaN, 
+          NaN, 
+          NaN
+        ], 
+        "value": [
+          48.0, 
+          50.0, 
+          52.0, 
+          53.0, 
+          55.0, 
+          57.0, 
+          59.0
+        ], 
+        "time": [
+          0.0, 
+          0.5, 
+          1.0, 
+          1.5, 
+          2.0, 
+          2.5, 
+          3.0
+        ]
+      }
+    }, 
+    {
+      "namespace": "tempo", 
+      "sandbox": {}, 
+      "time": 0, 
+      "duration": 3.5, 
+      "annotation_metadata": {
+        "annotation_tools": "", 
+        "curator": {
+          "name": "", 
+          "email": ""
+        }, 
+        "annotator": {}, 
+        "version": "", 
+        "corpus": "", 
+        "annotation_rules": "", 
+        "validation": "", 
+        "data_source": ""
+      }, 
+      "data": [
+        {
+          "duration": 3.5, 
+          "confidence": 1.0, 
+          "value": 120.0, 
+          "time": 0.0
+        }
+      ]
+    }
+  ], 
+  "file_metadata": {
+    "jams_version": "0.2.0", 
+    "title": "", 
+    "identifiers": {}, 
+    "release": "", 
+    "duration": 3.485170068027211, 
+    "artist": ""
+  }
+}
