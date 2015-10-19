@@ -7,9 +7,10 @@ import numpy as np
 import muda
 
 import jams
+import librosa
 
 
-def test_jampack():
+def test_jam_pack():
 
     jam = jams.JAMS()
 
@@ -25,3 +26,21 @@ def test_jampack():
 
     assert jam.sandbox.muda['y'] is y
     assert jam.sandbox.muda['sr'] == sr
+
+
+def test_load_jam_audio():
+
+    def __test(jam_in, audio_file):
+
+        jam = muda.load_jam_audio(jam_in, audio_file)
+
+        assert hasattr(jam.sandbox, 'muda')
+
+        assert jam.file_metadata.duration == librosa.get_duration(**jam.sandbox.muda._audio)
+
+    yield __test, 'data/fixture.jams', 'data/fixture.wav'
+
+    yield __test, jams.load('data/fixture.jams'), 'data/fixture.wav'
+
+    with open('data/fixture.jams', 'r') as fdesc:
+        yield __test, fdesc, 'data/fixture.wav'
