@@ -75,4 +75,27 @@ def test_save():
         librosa.get_duration(**jam2.sandbox.muda['_audio']))
 
 
+def test_serialize_deformer():
 
+    D = muda.deformers.LogspaceTimeStretch()
+    D_ser = muda.serialize(D)
+    D2 = muda.deserialize(D_ser)
+
+    eq_(D.get_params(), D2.get_params())
+
+    assert D is not D2
+
+
+def test_serialize_pipeline():
+
+    D1 = muda.deformers.LogspaceTimeStretch()
+    D2 = muda.deformers.LogspaceTimeStretch()
+    P_orig = muda.Pipeline([('stretch_1', D1),
+                            ('stretch_2', D2)])
+    P_ser = muda.serialize(P_orig)
+
+    P_new = muda.deserialize(P_ser)
+
+    eq_(P_orig.get_params(), P_new.get_params())
+
+    assert P_orig is not P_new
