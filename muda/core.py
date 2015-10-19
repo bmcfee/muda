@@ -27,8 +27,7 @@ def jam_pack(jam, **kwargs):
 
     >>> y, sr = librosa.load(librosa.util.example_audio_file())
     >>> jam = jams.JAMS()
-    >>> muda.jam_pack(jam, y=y, sr=sr)
-    >>> print muda
+    >>> muda.jam_pack(jam, _audio=dict(y=y, sr=sr))
     '''
 
     if not hasattr(jam.sandbox, 'muda'):
@@ -60,12 +59,10 @@ def load_jam_audio(jam_in, audio_file, **kwargs):
 
     '''
 
-    if isinstance(jam_in, six.string_types):
-        jam = jams.load(jam_in)
-    elif isinstance(jam_in, jams.JAMS):
+    if isinstance(jam_in, jams.JAMS):
         jam = jam_in
     else:
-        raise TypeError('Invalid input type: ' + type(jam_in))
+        jam = jams.load(jam_in)
 
     y, sr = librosa.load(audio_file, **kwargs)
 
