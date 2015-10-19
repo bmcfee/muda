@@ -11,7 +11,7 @@ conda_create ()
     conda update -q conda
     conda config --add channels pypi
     conda info -a
-    deps='pip numpy scipy nose pandas pyrubberband jams pysoundfile scikit-learn jsonpickle librosa'
+    deps='pip numpy scipy nose pandas jams pysoundfile scikit-learn jsonpickle librosa'
 
     conda create -q -n $ENV_NAME "python=$1" $deps
 }
@@ -43,6 +43,7 @@ if [ ! -f "$HOME/env/miniconda.sh" ]; then
             source activate $ENV_NAME
 
             pip install python-coveralls
+            pip install git+https://github.com/bmcfee/pyrubberband.git
 
             source deactivate
 
