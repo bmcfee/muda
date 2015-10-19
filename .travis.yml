@@ -8,6 +8,7 @@ addons:
     - rubberband-cli
     - ffmpeg
     - libsndfile1
+    - sox
 
 cache:
   directories:
