@@ -1,0 +1,46 @@
+language: python
+
+sudo: false
+
+addons:
+  apt:
+    packages:
+    - rubberband-cli
+
+cache:
+  directories:
+  - $HOME/env
+
+notifications:
+  email: false
+
+python:
+    - "2.7"
+    - "3.4"
+    - "3.5"
+
+before_install:
+    - bash .travis_dependencies.sh
+    - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
+        export PATH="$HOME/env/miniconda27/bin:$PATH";
+      elif [[ "$TRAVIS_PYTHON_VERSION" == "3.4" ]]; then
+        export PATH="$HOME/env/miniconda34/bin:$PATH";
+      else
+        export PATH="$HOME/env/miniconda35/bin:$PATH";
+      fi
+    - hash -r
+    - source activate test-environment
+
+install:
+    # install your own package into the environment
+    - pip install -e .
+
+script:
+    - nosetests -v -w tests/ --with-coverage --cover-erase --cover-package=muda
+
+after_success:
+    - coveralls
+    - pip uninstall -y muda
+
+after_failure:
+    - pip uninstall -y muda
