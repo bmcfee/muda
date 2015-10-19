@@ -3,7 +3,7 @@
 # CREATED:2015-03-03 21:29:49 by Brian McFee <brian.mcfee@nyu.edu>
 '''Additive background noise'''
 
-import pysoundfile as psf
+import soundfile as psf
 import librosa
 import numpy as np
 import os

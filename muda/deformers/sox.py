@@ -9,7 +9,7 @@ import subprocess
 import tempfile
 import librosa
 import json
-import pysoundfile as psf
+import soundfile as psf
 from pkg_resources import resource_filename
 
 from ..base import BaseTransformer

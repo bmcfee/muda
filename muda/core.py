@@ -5,7 +5,7 @@
 
 import jams
 import librosa
-import pysoundfile as psf
+import soundfile as psf
 import jsonpickle
 
 import six
@@ -87,7 +87,7 @@ def save(filename_audio, filename_jam, jam, strict=True, **kwargs):
         Strict safety checking for jams output
 
     kwargs
-        Additional parameters to `pysoundfile.write`
+        Additional parameters to `soundfile.write`
 
     '''
 
