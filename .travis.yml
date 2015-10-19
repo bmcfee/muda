@@ -6,6 +6,7 @@ addons:
   apt:
     packages:
     - rubberband-cli
+    - ffmpeg
 
 cache:
   directories:
