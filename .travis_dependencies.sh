@@ -43,7 +43,8 @@ if [ ! -f "$HOME/env/miniconda.sh" ]; then
             source activate $ENV_NAME
 
             pip install python-coveralls
-            pip install librosa jams pysoundfile jsonpickle pyrubberband
+            pip install librosa pysoundfile jsonpickle pyrubberband
+            pip install git+https://github.com/marl/jams.git
 
             source deactivate
 
