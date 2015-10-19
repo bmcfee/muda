@@ -11,13 +11,15 @@ Contents:
 .. toctree::
     :maxdepth: 2
 
-.. automodule:: muda.core
+.. module:: muda
+
+.. automodule:: core
     :members:
     :imported-members:
     :undoc-members:
     :show-inheritance:
 
-.. automodule:: muda.deformers
+.. automodule:: deformers
     :members:
     :imported-members:
     :undoc-members:

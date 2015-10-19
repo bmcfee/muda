@@ -1,1 +1,2 @@
-git+git://github.com/marl/jams.git@pandas
+git+git://github.com/marl/jams.git@dvelop
+numpydoc
