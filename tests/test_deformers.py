@@ -214,6 +214,9 @@ def __test_note(ann_orig, ann_new, n):
 
     v_orig = np.mod(np.round(np.mod(v_orig + n, 12)), 12)
     v_new = np.mod(np.round(np.mod(v_new, 12)), 12)
+    print(n)
+    print(ann_orig.data.value)
+    print(ann_new.data.value)
     ap_(v_orig, v_new)
 
 
@@ -239,14 +242,19 @@ def __test_midi(ann_orig, ann_new, n):
     ap_(ann_orig.data.value + n, ann_new.data.value)
 
 
-def __test_pitch(jam_orig, jam_new, n_semitones):
+def __test_pitch(jam_orig, jam_new, n_semitones, tuning):
+
+    if -0.5 < tuning + n_semitones <= 0.5:
+        q_tones = 0.0
+    else:
+        q_tones = n_semitones
 
     # Test each annotation
     for ann_orig, ann_new in zip(jam_orig.annotations, jam_new.annotations):
         if ann_orig.namespace in ['chord', 'chord_harte', 'key_mode']:
-            __test_note(ann_orig, ann_new, n_semitones)
+            __test_note(ann_orig, ann_new, q_tones)
         elif ann_orig.namespace in ['pitch_class', 'chord_roman']:
-            __test_tonic(ann_orig, ann_new, n_semitones)
+            __test_tonic(ann_orig, ann_new, q_tones)
         elif ann_orig.namespace == 'pitch_hz':
             __test_hz(ann_orig, ann_new, n_semitones)
         elif ann_orig.namespace == 'pitch_midi':
@@ -263,16 +271,16 @@ def test_pitchshift():
         for jam_new in D.transform(jam):
             # Verify that the original jam reference hasn't changed
             assert jam_new is not jam
-            __test_pitch(jam_orig, jam, 0.0)
+            __test_pitch(jam_orig, jam, 0.0, 0)
 
             # Verify that the state and history objects are intact
             __test_deformer_history(D, jam_new.sandbox.muda.history[-1])
 
             d_state = jam_new.sandbox.muda.history[-1]['state']
             d_tones = d_state['n_semitones']
+            tuning = d_state['tuning']
             ap_(n_semitones, d_tones)
-
-            __test_pitch(jam_orig, jam_new, d_tones)
+            __test_pitch(jam_orig, jam_new, d_tones, tuning)
 
     for n in [-2, -1, -0.5, -0.25, 0, 0.25, 1.0, 1.5]:
         yield __test, n, jam_fixture
@@ -287,15 +295,15 @@ def test_random_pitchshift():
         for jam_new in D.transform(jam):
             # Verify that the original jam reference hasn't changed
             assert jam_new is not jam
-            __test_pitch(jam_orig, jam, 0.0)
+            __test_pitch(jam_orig, jam, 0.0, 0.0)
 
             # Verify that the state and history objects are intact
             __test_deformer_history(D, jam_new.sandbox.muda.history[-1])
 
             d_state = jam_new.sandbox.muda.history[-1]['state']
             d_tones = d_state['n_semitones']
-
-            __test_pitch(jam_orig, jam_new, d_tones)
+            tuning = d_state['tuning']
+            __test_pitch(jam_orig, jam_new, d_tones, tuning)
 
     @raises(ValueError)
     def __test_negative_scale(sigma):
@@ -309,4 +317,43 @@ def test_random_pitchshift():
     
     for bad_sigma in [-1, 0]:
         yield __test_negative_scale, bad_sigma
+
+
+def test_linear_pitchshift():
+
+    def __test(n, lower, upper, jam):
+        D = muda.deformers.LinearPitchShift(n_samples=n, lower=lower, upper=upper)
+
+        jam_orig = deepcopy(jam)
+
+        n_samples = 0
+        for jam_new in D.transform(jam):
+            # Verify that the original jam reference hasn't changed
+            assert jam_new is not jam
+            __test_pitch(jam_orig, jam, 0.0, 0.0)
+
+            # Verify that the state and history objects are intact
+            __test_deformer_history(D, jam_new.sandbox.muda.history[-1])
+
+            d_state = jam_new.sandbox.muda.history[-1]['state']
+            d_tones = d_state['n_semitones']
+            tuning = d_state['tuning']
+            assert lower <= d_tones <= 2.0**upper
+
+            __test_pitch(jam_orig, jam_new, d_tones, tuning)
+            n_samples += 1
+
+        eq_(n, n_samples)
+
+
+    for n in [1, 3, 5]:
+        for lower in [-3, -1, 0.0]:
+            for upper in [1, 3]:
+                yield __test, n, lower, upper, jam_fixture
+
+    for bad_samples in [-3, 0]:
+        yield raises(ValueError)(__test), bad_samples, -1, 1, jam_fixture
+
+    for bad_int in [(-1, -3), (2, 1)]:
+        yield raises(ValueError)(__test), 3, bad_int[0], bad_int[1], jam_fixture
 
