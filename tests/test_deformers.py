@@ -434,4 +434,22 @@ def test_background():
         yield raises(ValueError)(__test), noise, 1, bad_int[0], bad_int[1], jam_fixture
 
 
+def test_pipeline():
+    D1 = muda.deformers.TimeStretch(rate=2.0)
+    D2 = muda.deformers.TimeStretch(rate=1.5)
+
+    P = muda.Pipeline([('stretch_1', D1),
+                       ('stretch_2', D2)])
+
+    jam_orig = deepcopy(jam_fixture)
+
+    for jam_new in P.transform(jam_fixture):
+        assert jam_new is not jam_fixture
+        __test_time(jam_orig, jam_fixture, 1.0)
+
+        # Verify that the state and history objects are intact
+        __test_deformer_history(D1, jam_new.sandbox.muda.history[0])
+        __test_deformer_history(D2, jam_new.sandbox.muda.history[-1])
+
+        __test_time(jam_orig, jam_new, D1.rate * D2.rate)
 
