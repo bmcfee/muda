@@ -394,3 +394,41 @@ def test_drc():
         yield __test, preset, jam_fixture
 
     yield __test, muda.deformers.sox.PRESETS, jam_fixture
+
+
+def test_background():
+
+    def __test(noise_sample, n_samples, weight_min, weight_max, jam):
+
+        D = muda.deformers.BackgroundNoise(files=noise_sample,
+                                           n_samples=n_samples,
+                                           weight_min=weight_min,
+                                           weight_max=weight_max)
+
+        jam_orig = deepcopy(jam)
+
+        for jam_new in D.transform(jam_orig):
+
+            assert jam_new is not jam
+            __test_effect(jam_orig, jam)
+
+            assert not np.allclose(jam_orig.sandbox.muda['_audio']['y'],
+                                   jam_new.sandbox.muda['_audio']['y'])
+
+            __test_effect(jam_orig, jam_new)
+
+    noise = 'data/noise_sample.ogg'
+
+    for weight_min in [0.01, 0.1, 0.5]:
+        for weight_max in [0.6, 0.8, 0.99]:
+            yield __test, noise, 3, weight_min, weight_max, jam_fixture
+            yield __test, [noise], 3, weight_min, weight_max, jam_fixture
+
+    yield raises(RuntimeError)(__test), 'nonexistant_file.ogg', 3, weight_min, weight_max, jam_fixture
+
+    for bad_n in [-1, 0]:
+        yield raises(ValueError)(__test), noise, bad_n, 0.25, 0.75, jam_fixture
+
+    for bad_int in [(0, 0.5), (0.5, 1), (-1, 0.5), (0.5, 1.5), (0.75, 0.25)]:
+        yield raises(ValueError)(__test), noise, 1, bad_int[0], bad_int[1], jam_fixture
+
