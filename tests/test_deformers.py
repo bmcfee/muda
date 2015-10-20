@@ -109,12 +109,12 @@ def test_log_timestretch():
 
 
     for n in [1, 3, 5]:
-        for lower in [0.5, 0.8]:
-            for upper in [1.0, 1.25]:
+        for lower in [-1, -0.5, 0.0]:
+            for upper in [0.5, 1.0]:
                 yield __test, n, lower, upper, jam_fixture
 
     for bad_samples in [-3, 0]:
-        yield raises(ValueError)(__test), bad_samples, 0.8, 0.75, jam_fixture
+        yield raises(ValueError)(__test), bad_samples, -1, 1, jam_fixture
 
     for bad_int in [(-1, -3), (2, 1)]:
         yield raises(ValueError)(__test), 3, bad_int[0], bad_int[1], jam_fixture
