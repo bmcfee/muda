@@ -453,3 +453,12 @@ def test_pipeline():
 
         __test_time(jam_orig, jam_new, D1.rate * D2.rate)
 
+
+@raises(ValueError)
+def test_bad_pipeline():
+    D1 = muda.deformers.TimeStretch(rate=2.0)
+    D2 = muda.deformers.TimeStretch(rate=1.5)
+
+    P = muda.Pipeline([('stretch', D1),
+                       ('stretch', D2)])
+
