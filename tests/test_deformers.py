@@ -23,6 +23,16 @@ def ap_(a, b, msg=None, rtol=1e-5, atol=1e-5):
 
 jam_fixture = muda.load_jam_audio('data/fixture.jams', 'data/fixture.wav')
 
+
+@raises(RuntimeError)
+def test_raw():
+
+    jam_raw = jams.load('data/fixture.jams')
+    D = muda.deformers.TimeStretch(rate=2.0)
+
+    six.next(D.transform(jam_raw))
+
+
 def __test_time(jam_orig, jam_new, rate):
 
     # Test the track length
