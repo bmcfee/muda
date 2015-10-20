@@ -15,7 +15,6 @@ jam_fixture = muda.load_jam_audio('data/fixture.jams', 'data/fixture.wav')
 def __test_time(jam_orig, jam_new, rate):
 
     # Test the track length
-
     eq_(librosa.get_duration(**jam_orig.sandbox.muda['_audio']),
         rate * librosa.get_duration(**jam_new.sandbox.muda['_audio']))
 
@@ -49,7 +48,15 @@ def test_timestretch():
             # Verify that the original jam reference hasn't changed
             assert jam_new is not jam
             __test_time(jam_orig, jam, 1.0)
-            __test_time(jam_orig, jam_new, rate)
+
+            # Verify that the state and history objects are intact
+            d_trans = jam_new.sandbox.muda.history[-1]['transformer']
+            eq_(d_trans['params'], D.get_params()['params'])
+            d_state = jam_new.sandbox.muda.history[-1]['state']
+            d_rate = d_state['rate']
+            eq_(rate, d_rate)
+
+            __test_time(jam_orig, jam_new, d_rate)
 
 
     for rate in [0.5, 1.0, 2.0]:
