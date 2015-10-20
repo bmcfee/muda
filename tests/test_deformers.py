@@ -45,9 +45,10 @@ def __test_time(jam_orig, jam_new, rate):
 
     # Test each annotation
     for ann_orig, ann_new in zip(jam_orig.annotations, jam_new.annotations):
-        # FIXME: time deformer should modify this
-        #eq_(ann_orig.time, rate * ann_new.time)
-        #eq_(ann_orig.duration, rate * ann_new.duration)
+        # JAMS 0.2.1 support
+        if hasattr(ann_orig, 'time'):
+            ap_(ann_orig.time, rate * ann_new.time)
+            ap_(ann_orig.duration, rate * ann_new.duration)
 
         ap_(ann_orig.data.time.values.astype(float),
             rate * ann_new.data.time.values.astype(float))
@@ -431,4 +432,6 @@ def test_background():
 
     for bad_int in [(0, 0.5), (0.5, 1), (-1, 0.5), (0.5, 1.5), (0.75, 0.25)]:
         yield raises(ValueError)(__test), noise, 1, bad_int[0], bad_int[1], jam_fixture
+
+
 
