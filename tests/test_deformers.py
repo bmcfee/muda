@@ -394,7 +394,7 @@ def test_drc():
     for preset in muda.deformers.sox.PRESETS:
         yield __test, preset, jam_fixture
 
-    yield __test, muda.deformers.sox.PRESETS, jam_fixture
+    yield __test, muda.deformers.sox.PRESETS.keys(), jam_fixture
 
 
 def test_background():
