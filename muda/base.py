@@ -175,10 +175,9 @@ class Pipeline(object):
         >>> output = Pipe.transform(data)
         '''
 
-        named_steps = dict(steps)
         names, transformers = zip(*steps)
 
-        if len(named_steps) != len(steps):
+        if len(set(names)) != len(steps):
             raise ValueError("Names provided are not unique: "
                              " {:s}".format(names,))
 
