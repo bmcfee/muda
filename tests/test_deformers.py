@@ -37,12 +37,19 @@ def __test_time(jam_orig, jam_new, rate):
             assert np.allclose(rate * ann_orig.data.value,
                                ann_new.data.value)
 
+
+def __test_deformer_history(deformer, history):
+
+    d_trans = history['transformer']
+    params = deformer.get_params()
+
+    eq_(d_trans['params'], params['params'])
+    eq_(d_trans['__class__'], params['__class__'].__name__)
+
 def test_timestretch():
 
     def __test(rate, jam):
         D = muda.deformers.TimeStretch(rate=rate)
-
-        params = D.get_params()
 
         jam_orig = deepcopy(jam)
 
@@ -52,9 +59,7 @@ def test_timestretch():
             __test_time(jam_orig, jam, 1.0)
 
             # Verify that the state and history objects are intact
-            d_trans = jam_new.sandbox.muda.history[-1]['transformer']
-            eq_(d_trans['params'], params['params'])
-            eq_(d_trans['__class__'], params['__class__'].__name__)
+            __test_deformer_history(D, jam_new.sandbox.muda.history[-1])
 
             d_state = jam_new.sandbox.muda.history[-1]['state']
             d_rate = d_state['rate']
