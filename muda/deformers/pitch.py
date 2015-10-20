@@ -7,6 +7,7 @@ import librosa
 import pyrubberband as pyrb
 import re
 import numpy as np
+import six
 
 from ..base import BaseTransformer
 
@@ -32,7 +33,8 @@ def transpose(label, n_semitones):
     '''
 
     # Otherwise, split off the note from the modifier
-    match = re.match('(?P<note>[A-G][b#]*)(?P<mod>.*)', label)
+    match = re.match(six.text_type('(?P<note>[A-G][b#]*)(?P<mod>.*)'),
+                     six.text_type(label))
 
     if not match:
         return label
@@ -57,8 +59,10 @@ class AbstractPitchShift(BaseTransformer):
         BaseTransformer.__init__(self)
 
         # Build the annotation mapping
-        self._register('key_mode|chord_harte', self.deform_note)
-        self._register('melody_hz', self.deform_frequency)
+        self._register('key_mode|chord|chord_harte', self.deform_note)
+        self._register('pitch_hz', self.deform_frequency)
+        self._register('pitch_midi', self.deform_midi)
+        self._register('chord_roman|pitch_class', self.deform_tonic)
 
     def states(self, jam):
         mudabox = jam.sandbox.muda
@@ -81,17 +85,37 @@ class AbstractPitchShift(BaseTransformer):
         annotation.data.value *= 2.0 ** (state['n_semitones'] / 12.0)
 
     @staticmethod
-    def deform_note(annotation, state):
-        '''Deform note-valued annotations (chord or key)'''
+    def deform_midi(annotation, state):
+        '''Deform pitch-midi annotations'''
+
+        annotation.data.value += state['n_semitones']
+
+    @staticmethod
+    def deform_tonic(annotation, state):
+        '''Deform the tonic'''
 
         # First, figure out the tuning after deformation
-        if -0.5 <= (state['tuning'] + state['n_semitones']) < 0.5:
+        if -0.5 < (state['tuning'] + state['n_semitones']) <= 0.5:
             # If our tuning was off by more than the deformation,
             # then no label modification is necessary
             return
 
-        annotation.data.values = [transpose(l, state['n_semitones'])
-                                  for l in annotation.data.values]
+        for obs in annotation.data.value:
+            obs['tonic'] = transpose(obs['tonic'], state['n_semitones'])
+
+
+    @staticmethod
+    def deform_note(annotation, state):
+        '''Deform note-valued annotations (chord or key)'''
+
+        # First, figure out the tuning after deformation
+        if -0.5 < (state['tuning'] + state['n_semitones']) <= 0.5:
+            # If our tuning was off by more than the deformation,
+            # then no label modification is necessary
+            return
+
+        annotation.data.value = [transpose(obs, state['n_semitones'])
+                                 for obs in annotation.data.value]
 
 
 class PitchShift(AbstractPitchShift):

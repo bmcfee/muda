@@ -1,9 +1,12 @@
 #!/usr/bin/env python
 
+from __future__ import print_function
+
 import librosa
 import numpy as np
 import jams
 
+import re
 import six
 
 import muda
@@ -192,3 +195,84 @@ def test_bypass():
         yield raises(ValueError)(__test), bad_rate, jam_fixture
 
     yield bad_test
+
+
+def pstrip(x):
+
+    root = re.match(six.text_type('([A-G][b#]*).*'),
+                    six.text_type(x)).groups()[0]
+
+    return librosa.note_to_midi(root)
+
+
+def __test_note(ann_orig, ann_new, n):
+
+    # Get the value strings
+    v_orig = np.asarray([pstrip(_) for _ in ann_orig.data.value])
+    v_new  = np.asarray([pstrip(_) for _ in ann_new.data.value])
+
+    v_orig = np.mod(np.round(np.mod(v_orig + n, 12)), 12)
+    v_new = np.mod(np.round(np.mod(v_new, 12)), 12)
+    ap_(v_orig, v_new)
+
+
+def __test_tonic(ann_orig, ann_new, n):
+
+    v_orig = np.asarray([pstrip(_['tonic']) for _ in ann_orig.data.value])
+    v_new  = np.asarray([pstrip(_['tonic']) for _ in ann_new.data.value])
+
+    v_orig = np.mod(np.round(np.mod(v_orig + n, 12)), 12)
+    v_new = np.mod(np.round(np.mod(v_new, 12)), 12)
+    ap_(v_orig, v_new)
+
+
+def __test_hz(ann_orig, ann_new, n):
+
+    scale = 2.0**(float(n) / 12)
+
+    ap_(ann_orig.data.value * scale, ann_new.data.value)
+
+
+def __test_midi(ann_orig, ann_new, n):
+
+    ap_(ann_orig.data.value + n, ann_new.data.value)
+
+
+def __test_pitch(jam_orig, jam_new, n_semitones):
+
+    # Test each annotation
+    for ann_orig, ann_new in zip(jam_orig.annotations, jam_new.annotations):
+        if ann_orig.namespace in ['chord', 'chord_harte', 'key_mode']:
+            __test_note(ann_orig, ann_new, n_semitones)
+        elif ann_orig.namespace in ['pitch_class', 'chord_roman']:
+            __test_tonic(ann_orig, ann_new, n_semitones)
+        elif ann_orig.namespace == 'pitch_hz':
+            __test_hz(ann_orig, ann_new, n_semitones)
+        elif ann_orig.namespace == 'pitch_midi':
+            __test_midi(ann_orig, ann_new, n_semitones)
+
+
+def test_pitchshift():
+    def __test(n_semitones, jam):
+        D = muda.deformers.PitchShift(n_semitones=n_semitones)
+
+        jam_orig = deepcopy(jam)
+
+        for jam_new in D.transform(jam):
+            # Verify that the original jam reference hasn't changed
+            assert jam_new is not jam
+            __test_pitch(jam_orig, jam, 0.0)
+
+            # Verify that the state and history objects are intact
+            __test_deformer_history(D, jam_new.sandbox.muda.history[-1])
+
+            d_state = jam_new.sandbox.muda.history[-1]['state']
+            print(d_state['tuning'])
+            d_tones = d_state['n_semitones']
+            ap_(n_semitones, d_tones)
+
+            __test_pitch(jam_orig, jam_new, d_tones)
+
+    for n in [-2, -1, -0.5, -0.25, 0, 0.25, 1.0, 1.5]:
+        yield __test, n, jam_fixture
+
