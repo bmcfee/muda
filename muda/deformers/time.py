@@ -134,8 +134,8 @@ class RandomTimeStretch(AbstractTimeStretch):
         if scale <= 0:
             raise ValueError('scale parameter must be strictly positive.')
 
-        if not (n_samples > 0 or n_samples is None):
-            raise ValueError('n_samples must be None or positive')
+        if n_samples <= 0:
+            raise ValueError('n_samples must be strictly positive')
 
         self.n_samples = n_samples
         self.location = location

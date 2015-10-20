@@ -118,3 +118,36 @@ def test_log_timestretch():
 
     for bad_int in [(-1, -3), (2, 1)]:
         yield raises(ValueError)(__test), 3, bad_int[0], bad_int[1], jam_fixture
+
+
+def test_random_timestretch():
+
+    def __test(n_samples, jam):
+        D = muda.deformers.RandomTimeStretch(n_samples=n_samples)
+
+        jam_orig = deepcopy(jam)
+
+        for jam_new in D.transform(jam):
+            # Verify that the original jam reference hasn't changed
+            assert jam_new is not jam
+            __test_time(jam_orig, jam, 1.0)
+
+            # Verify that the state and history objects are intact
+            __test_deformer_history(D, jam_new.sandbox.muda.history[-1])
+
+            d_state = jam_new.sandbox.muda.history[-1]['state']
+            d_rate = d_state['rate']
+
+            __test_time(jam_orig, jam_new, d_rate)
+
+    @raises(ValueError)
+    def __test_negative_scale():
+        muda.deformers.RandomTimeStretch(scale=-1)
+
+    for n in [1, 3, 5]:
+        yield __test, n, jam_fixture
+
+    for bad_n in [-1, 0]:
+        yield raises(ValueError)(__test), bad_n, jam_fixture
+
+    yield __test_negative_scale
