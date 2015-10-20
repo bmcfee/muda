@@ -42,6 +42,8 @@ def test_timestretch():
     def __test(rate, jam):
         D = muda.deformers.TimeStretch(rate=rate)
 
+        params = D.get_params()
+
         jam_orig = deepcopy(jam)
 
         for jam_new in D.transform(jam):
@@ -51,7 +53,9 @@ def test_timestretch():
 
             # Verify that the state and history objects are intact
             d_trans = jam_new.sandbox.muda.history[-1]['transformer']
-            eq_(d_trans['params'], D.get_params()['params'])
+            eq_(d_trans['params'], params['params'])
+            eq_(d_trans['__class__'], params['__class__'].__name__)
+
             d_state = jam_new.sandbox.muda.history[-1]['state']
             d_rate = d_state['rate']
             eq_(rate, d_rate)
