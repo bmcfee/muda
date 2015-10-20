@@ -181,6 +181,9 @@ def test_bypass():
 
             __test_time(jam_orig, jam_new, d_rate)
 
+    @raises(TypeError)
+    def bad_test():
+        D = muda.deformers.Bypass(None)
 
     for rate in [0.5, 1.0, 2.0]:
         yield __test, rate, jam_fixture
@@ -188,3 +191,4 @@ def test_bypass():
     for bad_rate in [-1, -0.5, 0.0]:
         yield raises(ValueError)(__test), bad_rate, jam_fixture
 
+    yield bad_test
