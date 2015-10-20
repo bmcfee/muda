@@ -4,6 +4,7 @@ import librosa
 import numpy as np
 import jams
 
+import six
 
 import muda
 from copy import deepcopy
@@ -151,3 +152,39 @@ def test_random_timestretch():
         yield raises(ValueError)(__test), bad_n, jam_fixture
 
     yield __test_negative_scale
+
+
+def test_bypass():
+
+    def __test(rate, jam):
+        _D = muda.deformers.TimeStretch(rate=rate)
+        D = muda.deformers.Bypass(transformer=_D)
+
+        jam_orig = deepcopy(jam)
+
+        generator = D.transform(jam)
+        jam_new = six.next(generator)
+        assert jam_new is jam
+        __test_time(jam_orig, jam, 1.0)
+
+        for jam_new in generator:
+            # Verify that the original jam reference hasn't changed
+            assert jam_new is not jam
+            __test_time(jam_orig, jam, 1.0)
+
+            # Verify that the state and history objects are intact
+            __test_deformer_history(_D, jam_new.sandbox.muda.history[-1])
+
+            d_state = jam_new.sandbox.muda.history[-1]['state']
+            d_rate = d_state['rate']
+            ap_(rate, d_rate)
+
+            __test_time(jam_orig, jam_new, d_rate)
+
+
+    for rate in [0.5, 1.0, 2.0]:
+        yield __test, rate, jam_fixture
+
+    for bad_rate in [-1, -0.5, 0.0]:
+        yield raises(ValueError)(__test), bad_rate, jam_fixture
+
