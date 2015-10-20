@@ -179,7 +179,7 @@ class Pipeline(object):
 
         if len(set(names)) != len(steps):
             raise ValueError("Names provided are not unique: "
-                             " {:s}".format(names,))
+                             " {}".format(names,))
 
         # shallow copy of steps
         self.steps = list(zip(names, transformers))
