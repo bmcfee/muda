@@ -127,7 +127,7 @@ def test_log_timestretch():
 def test_random_timestretch():
 
     def __test(n_samples, jam):
-        np.random.set_state(0)
+        np.random.seed(0)
         D = muda.deformers.RandomTimeStretch(n_samples=n_samples)
 
         jam_orig = deepcopy(jam)
@@ -255,7 +255,7 @@ def __test_pitch(jam_orig, jam_new, n_semitones):
 
 def test_pitchshift():
     def __test(n_semitones, jam):
-        np.random.set_state(0)
+        np.random.seed(0)
         D = muda.deformers.PitchShift(n_semitones=n_semitones)
 
         jam_orig = deepcopy(jam)
