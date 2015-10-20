@@ -162,7 +162,7 @@ class RandomPitchShift(AbstractPitchShift):
         if sigma <= 0:
             raise ValueError('sigma must be strictly positive')
 
-        if not (n_samples > 0 or n_samples is None):
+        if n_samples <= 0:
             raise ValueError('n_samples must be None or positive')
 
         self.n_samples = n_samples
