@@ -224,9 +224,6 @@ def __test_note(ann_orig, ann_new, n):
 
     v_orig = np.mod(np.round(np.mod(v_orig + n, 12)), 12)
     v_new = np.mod(np.round(np.mod(v_new, 12)), 12)
-    print(n)
-    print(ann_orig.data.value)
-    print(ann_new.data.value)
     ap_(v_orig, v_new)
 
 
@@ -367,3 +364,33 @@ def test_linear_pitchshift():
     for bad_int in [(-1, -3), (2, 1)]:
         yield raises(ValueError)(__test), 3, bad_int[0], bad_int[1], jam_fixture
 
+
+def __test_effect(jam_orig, jam_new):
+
+
+    for ann_orig, ann_new in zip(jam_orig.annotations, jam_new.annotations):
+        eq_(ann_orig, ann_new)
+
+
+def test_drc():
+
+    def __test(preset, jam):
+
+        D = muda.deformers.DynamicRangeCompression(preset=preset)
+
+        jam_orig = deepcopy(jam)
+
+        for jam_new in D.transform(jam_orig):
+
+            assert jam_new is not jam
+            __test_effect(jam_orig, jam)
+
+            assert not np.allclose(jam_orig.sandbox.muda['_audio']['y'],
+                                   jam_new.sandbox.muda['_audio']['y'])
+
+            __test_effect(jam_orig, jam_new)
+
+    for preset in muda.deformers.sox.PRESETS:
+        yield __test, preset, jam_fixture
+
+    yield __test, muda.deformers.sox.PRESETS, jam_fixture
