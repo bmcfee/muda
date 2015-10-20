@@ -455,10 +455,18 @@ def test_pipeline():
 
 
 @raises(ValueError)
-def test_bad_pipeline():
+def test_bad_pipeline_unique():
     D1 = muda.deformers.TimeStretch(rate=2.0)
     D2 = muda.deformers.TimeStretch(rate=1.5)
 
     P = muda.Pipeline([('stretch', D1),
                        ('stretch', D2)])
+
+
+@raises(TypeError)
+def test_bad_pipeline_object():
+    D = muda.deformers.TimeStretch(rate=2.0)
+
+    P = muda.Pipeline([('stretch1', D),
+                       ('stretch2', 'not a basetransformer')])
 
