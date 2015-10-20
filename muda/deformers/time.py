@@ -56,9 +56,13 @@ class AbstractTimeStretch(BaseTransformer):
     def deform_times(ann, state):
         '''Deform time values for all annotations.'''
 
+        ann.time /= state['rate']
         ann.data.time = [pd.to_timedelta(x.total_seconds() / state['rate'],
                                          unit='s')
                          for x in ann.data.time]
+
+        if ann.duration is not None:
+            ann.duration /= state['rate']
 
         ann.data.duration = [pd.to_timedelta(x.total_seconds() / state['rate'],
                                              unit='s')
