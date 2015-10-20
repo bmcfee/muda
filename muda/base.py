@@ -21,13 +21,10 @@ class BaseTransformer(object):
 
         init = cls.__init__
 
-        if init is object.__init__:
-            return []
-
         args, varargs = inspect.getargspec(init)[:2]
 
         if varargs is not None:
-            raise RuntimeError('varargs ist verboten')
+            raise RuntimeError('BaseTransformer objects cannot have varargs')
 
         args.pop(0)
         args.sort()
@@ -76,7 +73,7 @@ class BaseTransformer(object):
 
     def states(self, jam):
         '''Iterate the state object for a static transformer'''
-        yield dict()
+        raise NotImplementedError
 
     def _register(self, pattern, function):
         '''Register a deformation function against a namespace pattern'''

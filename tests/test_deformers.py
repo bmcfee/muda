@@ -470,3 +470,10 @@ def test_bad_pipeline_object():
     P = muda.Pipeline([('stretch1', D),
                        ('stretch2', 'not a basetransformer')])
 
+
+@raises(NotImplementedError)
+def test_base_transformer():
+
+    D = muda.BaseTransformer()
+
+    six.next(D.transform(jam_fixture))
