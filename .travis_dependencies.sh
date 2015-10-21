@@ -30,7 +30,7 @@ if [ ! -d "$src" ]; then
         export PATH="$src/bin:$PATH"
         conda_create
 
-        source activate $ENV_NAME
+        source $src/bin/activate $ENV_NAME
 
         python --version
         pip install python-coveralls
