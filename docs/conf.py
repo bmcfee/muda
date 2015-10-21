@@ -56,6 +56,22 @@ master_doc = 'index'
 project = u'muda'
 copyright = u'2015, Brian McFee'
 
+# Mock the dependencies
+from mock import MagicMock
+
+class Mock(MagicMock):
+    @classmethod
+    def __getattr__(cls, name):
+            return Mock()
+
+
+MOCK_MODULES = ['librosa', 'librosa.util', 'librosa.output',
+                'jsonpickle', 'soundfile', 'jams', 'sklearn.base',
+                'numpy', 'numpy.random',
+                'pyrubberband', 'pandas']
+
+sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
+
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
 # built documents.
