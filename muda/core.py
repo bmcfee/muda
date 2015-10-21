@@ -12,9 +12,6 @@ import jsonpickle
 
 import six
 
-from .base import *
-import warnings
-
 
 def jam_pack(jam, **kwargs):
     '''Pack data into a jams sandbox.
