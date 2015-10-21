@@ -29,7 +29,7 @@ if [ ! -f "$HOME/env/miniconda.sh" ]; then
 
         OLDPATH=$PATH
         export PATH="$src/bin:$PATH"
-        conda_create $version
+        conda_create $TRAVIS_PYTHON_VERSION
 
         source activate $ENV_NAME
 
