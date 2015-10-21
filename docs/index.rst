@@ -11,20 +11,8 @@ Contents:
 .. toctree::
     :maxdepth: 2
 
-.. module:: muda
-
-.. automodule:: core
-    :members:
-    :imported-members:
-    :undoc-members:
-    :show-inheritance:
-
-.. automodule:: deformers
-    :members:
-    :imported-members:
-    :undoc-members:
-    :show-inheritance:
-
+    core
+    deformers
 
 Indices and tables
 ==================
