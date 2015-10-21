@@ -3,7 +3,6 @@
 # CREATED:2015-02-02 10:09:43 by Brian McFee <brian.mcfee@nyu.edu>
 '''Time stretching deformations'''
 
-import jams
 import librosa
 import pyrubberband as pyrb
 import numpy as np
@@ -14,8 +13,7 @@ from ..base import BaseTransformer
 __all__ = ['TimeStretch',
            'RandomTimeStretch',
            'LogspaceTimeStretch',
-           'AnnotationBlur',
-           'Splitter']
+           'AnnotationBlur']
 
 
 class AbstractTimeStretch(BaseTransformer):
@@ -237,117 +235,3 @@ class AnnotationBlur(BaseTransformer):
         # Clip to the track duration - interval start
         d = [np.clip(d_i, 0, track_duration - t_i) for (d_i, t_i) in zip(d, t)]
         annotation.data.duration = pd.to_timedelta(d, unit='s')
-
-
-class Splitter(BaseTransformer):
-    '''Split a single jams object into multiple small tiles'''
-
-    def __init__(self, duration=10.0, stride=5.0, min_duration=0.5):
-        '''
-        Parameters
-        ----------
-        duration : float > 0
-            The (maximum) length (in seconds) of the sampled objects
-
-        stride : float > 0
-            The amount (in seconds) to advance between each sample
-
-        min_duration : float >= 0
-            The minimum duration to allow.  If the cropped example is too
-            small, it will not be generated.
-
-        '''
-
-        BaseTransformer.__init__(self)
-
-        if duration <= 0:
-            raise ValueError('duration must be strictly positive')
-
-        if stride <= 0:
-            raise ValueError('stride must be strictly positive')
-
-        if min_duration < 0:
-            raise ValueError('min_duration must be non-negative')
-
-        self.duration = duration
-        self.stride = stride
-        self.min_duration = min_duration
-
-        self._register('.*', self.crop_times)
-
-    def states(self, jam):
-        '''Set the state for the transformation object'''
-
-        state = dict()
-
-        mudabox = jam.sandbox.muda
-
-        state['track_duration'] = librosa.get_duration(y=mudabox._audio['y'],
-                                                       sr=mudabox._audio['sr'])
-
-        offsets = np.arange(start=0,
-                            stop=(state['track_duration'] - self.min_duration),
-                            step=self.stride)
-
-        for t in offsets:
-            state['offset'] = t
-            yield state
-
-    def metadata(self, metadata, state):
-        '''Adjust the metadata'''
-
-        metadata.duration = np.minimum(self.duration,
-                                       (state['track_duration'] -
-                                        state['offset']))
-
-    def audio(self, mudabox, state):
-        '''Crop the audio'''
-
-        offset_idx = int(state['offset'] * mudabox._audio['sr'])
-        duration = int(self.duration * mudabox._audio['sr'])
-
-        mudabox._audio['y'] = mudabox._audio['y'][offset_idx:offset_idx +
-                                                  duration]
-
-    def crop_times(self, annotation, state):
-        '''Crop the annotation object'''
-
-        # Convert timings to td64
-        min_time = pd.to_timedelta(state['offset'], unit='s')
-        duration = pd.to_timedelta(self.duration, unit='s')
-
-        # Get all the rows where
-        #   min_time <= time + duration
-        #   time <= state.offset[state.index] + state.duration
-        data = annotation.data
-        data = data[data['time'] + data['duration'] >= min_time]
-        data = data[data['time'] <= min_time + duration]
-
-        # Move any partially contained intervals up to the feasible range
-        #  [   |    )
-        #  t   s    t+d1 = s + d2
-        #  d2 = d1 + (t - s)
-        #      s = max(t, min_time)
-        #  d2 = d1 - (max(t, min_time) - t)
-        #     = d1 - max(t - t, min_time - t)
-        #     = d1 - max(0, min_time - t)
-        shift = np.maximum(0, min_time - data['time'])
-        data['duration'] -= shift
-
-        # And now reset everything to the new t=0
-        # time -= min_time
-        data['time'] -= min_time
-        data['time'] = data['time'].clip(lower=pd.to_timedelta(0, unit='s'))
-
-        # For any rows with time + duration > self.duration:
-        #   [  |   )
-        #   t  d2  d1
-        # t + d2 <= duration
-        # d2 <= duration - t
-        # d2 = min(d1, duration - t)
-        #   duration = min(duration, self.duration - time)
-        data['duration'] = np.minimum(data['duration'],
-                                      duration - data['time'])
-
-        data = data.reset_index()
-        annotation.data = jams.JamsFrame.from_dataframe(data)
