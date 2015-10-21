@@ -27,20 +27,18 @@ if [ ! -f "$HOME/env/miniconda.sh" ]; then
         src="$HOME/env/miniconda$TRAVIS_PYTHON_VERSION"
         bash miniconda.sh -b -p $src
 
-        OLDPATH=$PATH
         export PATH="$src/bin:$PATH"
         conda_create $TRAVIS_PYTHON_VERSION
 
         source activate $ENV_NAME
 
+        python --version
         pip install python-coveralls
         pip install pysoundfile jsonpickle
-        pip install --no-deps mir_eval audioread decorator librosa pyrubberband
-        pip install --no-deps git+https://github.com/marl/jams.git
+        pip install mir_eval audioread decorator librosa pyrubberband
+        pip install git+https://github.com/marl/jams.git
 
         source deactivate
-
-        export PATH=$OLDPATH
     popd
 else
     echo "Using cached dependencies"
