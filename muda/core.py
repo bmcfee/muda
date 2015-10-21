@@ -89,8 +89,7 @@ def save(filename_audio, filename_jam, jam, strict=True, **kwargs):
     sr = jam.sandbox.muda._audio['sr']
 
     # First, dump the audio file
-    print(y.shape)
-    psf.write(y, filename_audio, sr, **kwargs)
+    psf.write(filename_audio, y, sr, **kwargs)
 
     # Then dump the jam
     jam.save(filename_jam, strict=strict)
