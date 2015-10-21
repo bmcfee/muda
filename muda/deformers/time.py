@@ -56,9 +56,13 @@ class AbstractTimeStretch(BaseTransformer):
     def deform_times(ann, state):
         '''Deform time values for all annotations.'''
 
+        ann.time /= state['rate']
         ann.data.time = [pd.to_timedelta(x.total_seconds() / state['rate'],
                                          unit='s')
                          for x in ann.data.time]
+
+        if ann.duration is not None:
+            ann.duration /= state['rate']
 
         ann.data.duration = [pd.to_timedelta(x.total_seconds() / state['rate'],
                                              unit='s')
@@ -134,8 +138,8 @@ class RandomTimeStretch(AbstractTimeStretch):
         if scale <= 0:
             raise ValueError('scale parameter must be strictly positive.')
 
-        if not (n_samples > 0 or n_samples is None):
-            raise ValueError('n_samples must be None or positive')
+        if n_samples <= 0:
+            raise ValueError('n_samples must be strictly positive')
 
         self.n_samples = n_samples
         self.location = location

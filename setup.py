@@ -31,7 +31,7 @@ setup(
         'librosa>=0.4',
         'pyrubberband',
         'pandas',
-        'pyjams>=0.1',
+        'jams>=0.2',
         'pysoundfile',
         'sklearn',
         'six',
