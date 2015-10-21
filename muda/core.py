@@ -3,17 +3,12 @@
 # CREATED:2015-02-01 19:25:59 by Brian McFee <brian.mcfee@nyu.edu>
 '''Core functionality for muda'''
 
-import numpy as np
-
 import jams
 import librosa
 import soundfile as psf
 import jsonpickle
 
 import six
-
-from .base import *
-import warnings
 
 
 def jam_pack(jam, **kwargs):
@@ -94,10 +89,7 @@ def save(filename_audio, filename_jam, jam, strict=True, **kwargs):
     sr = jam.sandbox.muda._audio['sr']
 
     # First, dump the audio file
-    if y.ndim == 1:
-        y = y[:, np.newaxis]
-
-    psf.write(y, filename_audio, sr, **kwargs)
+    psf.write(filename_audio, y, sr, **kwargs)
 
     # Then dump the jam
     jam.save(filename_jam, strict=strict)
@@ -113,8 +105,8 @@ def __reconstruct(params):
             return cls(**data)
         else:
             data = dict()
-            for k, v in six.iteritems(params):
-                data[k] = __reconstruct(v)
+            for key, value in six.iteritems(params):
+                data[key] = __reconstruct(value)
             return data
 
     elif isinstance(params, (list, tuple)):
