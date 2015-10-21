@@ -38,7 +38,7 @@ if [ ! -d "$src" ]; then
         pip install mir_eval audioread decorator librosa pyrubberband
         pip install git+https://github.com/marl/jams.git
 
-        source deactivate
+        source $src/bin/deactivate
     popd
 else
     echo "Using cached dependencies"
