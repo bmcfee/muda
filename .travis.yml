@@ -9,6 +9,8 @@ addons:
     - ffmpeg
     - libsndfile1
     - sox
+    - liblapack3
+    - liblapack3-dev
 
 cache:
   directories:
