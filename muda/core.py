@@ -105,8 +105,8 @@ def __reconstruct(params):
             return cls(**data)
         else:
             data = dict()
-            for k, v in six.iteritems(params):
-                data[k] = __reconstruct(v)
+            for key, value in six.iteritems(params):
+                data[key] = __reconstruct(value)
             return data
 
     elif isinstance(params, (list, tuple)):
