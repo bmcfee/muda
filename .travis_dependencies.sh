@@ -44,10 +44,8 @@ if [ ! -f "$HOME/env/miniconda.sh" ]; then
 
             pip install python-coveralls
             pip install pysoundfile jsonpickle
-            pip install git+https://github.com/marl/jams.git
-            pip install audioread decorator
-            pip install --no-deps librosa 
-            pip install pyrubberband
+            pip install --no-deps mir_eval audioread decorator librosa pyrubberband
+            pip install --no-deps git+https://github.com/marl/jams.git
 
             source deactivate
 
