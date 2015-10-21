@@ -1,7 +1,9 @@
 .. _core:
 
 Core functions
---------------
+==============
 
-.. automodule:: core
+.. module:: muda
+
+.. automodule:: muda.core
     :members:
