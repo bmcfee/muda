@@ -30,10 +30,8 @@ if [ ! -d "$src" ]; then
         export PATH="$src/bin:$PATH"
         conda_create
 
-        ls -l $src/bin
         source $src/bin/activate $ENV_NAME
 
-        python --version
         pip install python-coveralls
         pip install pysoundfile jsonpickle
         pip install mir_eval audioread decorator librosa pyrubberband
