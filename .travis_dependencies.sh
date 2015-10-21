@@ -13,10 +13,11 @@ conda_create ()
     conda info -a
     deps='pip numpy scipy nose pandas matplotlib scikit-learn'
 
-    conda create -q -n $ENV_NAME "python=$1" $deps
+    conda create -q -n $ENV_NAME "python=$TRAVIS_PYTHON_VERSION" $deps
 }
 
-if [ ! -f "$HOME/env/miniconda.sh" ]; then
+src="$HOME/env/miniconda$TRAVIS_PYTHON_VERSION"
+if [ ! -d "$src" ]; then
     mkdir -p $HOME/env
     pushd $HOME/env
     
@@ -24,11 +25,10 @@ if [ ! -f "$HOME/env/miniconda.sh" ]; then
         wget http://repo.continuum.io/miniconda/Miniconda-3.16.0-Linux-x86_64.sh -O miniconda.sh;
 
         # Install both environments
-        src="$HOME/env/miniconda$TRAVIS_PYTHON_VERSION"
         bash miniconda.sh -b -p $src
 
         export PATH="$src/bin:$PATH"
-        conda_create $TRAVIS_PYTHON_VERSION
+        conda_create
 
         source activate $ENV_NAME
 
