@@ -31,7 +31,7 @@ sys.path.insert(0, os.path.abspath('../muda'))
 # ones.
 extensions = [
     'sphinx.ext.autodoc',
-    'sphinx.ext.autosummary'
+    'sphinx.ext.autosummary',
     'sphinx.ext.intersphinx',
     'sphinx.ext.viewcode',
     'numpydoc',
