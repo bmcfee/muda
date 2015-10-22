@@ -15,6 +15,9 @@ Time-stretch deformers
 ----------------------
 
 .. autoclass:: TimeStretch
+    :members:
+    :undoc-members:
+
 .. autoclass:: RandomTimeStretch
 .. autoclass:: LogspaceTimeStretch
 

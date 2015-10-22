@@ -15,15 +15,14 @@ __all__ = ['TimeStretch',
 
 
 class AbstractTimeStretch(BaseTransformer):
-    '''Abstract base class for time stretching'''
+    '''Abstract base class for time stretching
+
+    This contains the deformation functions and
+    annotation query mapping, but does not manage
+    state or parameters.
+    '''
 
     def __init__(self):
-        '''Abstract base class for time stretching.
-
-        This contains the deformation functions and
-        annotation query mapping, but does not manage
-        state or parameters.
-        '''
         BaseTransformer.__init__(self)
 
         # Build the annotation mappers
@@ -32,25 +31,25 @@ class AbstractTimeStretch(BaseTransformer):
 
     @staticmethod
     def audio(mudabox, state):
-        '''Deform the audio and metadata'''
+        # Deform the audio and metadata
         mudabox._audio['y'] = pyrb.time_stretch(mudabox._audio['y'],
                                                 mudabox._audio['sr'],
                                                 state['rate'])
 
     @staticmethod
     def metadata(metadata, state):
-        '''Deform the metadata'''
+        # Deform the metadata
         metadata.duration /= state['rate']
 
     @staticmethod
     def deform_tempo(annotation, state):
-        '''Deform a tempo annotation'''
+        # Deform a tempo annotation
 
         annotation.data.value *= state['rate']
 
     @staticmethod
     def deform_times(ann, state):
-        '''Deform time values for all annotations.'''
+        # Deform time values for all annotations.
 
         ann.time /= state['rate']
         ann.data.time = [pd.to_timedelta(x.total_seconds() / state['rate'],
@@ -66,18 +65,32 @@ class AbstractTimeStretch(BaseTransformer):
 
 
 class TimeStretch(AbstractTimeStretch):
-    '''Static time stretching by a fixed rate'''
+    '''Static time stretching by a fixed rate
+
+    This transformation affects the following attributes:
+
+    - Annotations
+        - all: time, duration
+        - tempo: values
+    - metadata
+        - duration
+    - Audio
+
+
+    Attributes
+    ----------
+    rate : float > 0
+        The rate at which to speedup the audio.
+        - rate > 1 speeds up,
+        - rate < 1 slows down.
+
+    Examples
+    --------
+    >>> D = muda.deformers.TimeStretch(rate=2.0)
+    >>> out_jams = list(D.transform(jam_in))
+    '''
     def __init__(self, rate=1.2):
-        '''Time stretching
-
-        Parameters
-        ----------
-        rate : float > 0
-            The rate at which to speedup the audio.
-
-            rate > 1 speeds up,
-            rate < 1 slows down.
-        '''
+        '''Time stretching'''
         AbstractTimeStretch.__init__(self)
 
         self.rate = float(rate)
