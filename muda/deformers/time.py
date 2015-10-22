@@ -102,13 +102,30 @@ class TimeStretch(AbstractTimeStretch):
 
 
 class LogspaceTimeStretch(AbstractTimeStretch):
-    '''Logarithmically spaced time stretching'''
+    '''Logarithmically spaced time stretching.
+    
+    `n_samples` are generated with stretching spaced logarithmically
+    between `2.0**lower` and 2`.0**upper`.
+
+    This transformation affects the following attributes:
+
+    - Annotations
+        - all: time, duration
+        - tempo: values
+    - metadata
+        - duration
+    - Audio
+
+    Attributes
+    ----------
+    n_samples : int > 0
+        Number of deformations to generate
+
+    lower : float 
+    upper : float > lower
+        Minimum and maximum bounds on the stretch parameters
+    '''
     def __init__(self, n_samples=3, lower=0.8, upper=1.2):
-        '''Generate stretched examples distributed uniformly
-        in log-time.
-
-        '''
-
         AbstractTimeStretch.__init__(self)
 
         if upper <= lower:
@@ -122,8 +139,6 @@ class LogspaceTimeStretch(AbstractTimeStretch):
         self.upper = float(upper)
 
     def states(self, jam):
-        '''Set the state for the transformation object.'''
-
         rates = 2.0**np.linspace(self.lower,
                                  self.upper,
                                  num=self.n_samples,
@@ -134,13 +149,35 @@ class LogspaceTimeStretch(AbstractTimeStretch):
 
 
 class RandomTimeStretch(AbstractTimeStretch):
-    '''Random time stretching'''
-    def __init__(self, n_samples=3, location=0.0, scale=1.0e-1):
-        '''Generate randomly stretched examples.
+    '''Random time stretching
 
-        For each deformation, the rate parameter is drawn from a
-        log-normal distribution with parameters `(location, scale)`
-        '''
+    For each deformation, the rate parameter is drawn from a
+    log-normal distribution with parameters `(location, scale)`
+    
+    - Annotations
+        - all: time, duration
+        - tempo: values
+    - metadata
+        - duration
+    - Audio
+
+    Attributes
+    ----------
+    n_samples : int > 0
+        The number of samples to generate
+
+    location : float
+    scale : float > 0
+        Parameters of a log-normal distribution from which
+        rate parameters are sampled.
+
+    See Also
+    --------
+    TimeStretch
+    LogspaceTimeStretch
+    numpy.random.lognormal
+    '''
+    def __init__(self, n_samples=3, location=0.0, scale=1.0e-1):
 
         AbstractTimeStretch.__init__(self)
 
@@ -155,12 +192,6 @@ class RandomTimeStretch(AbstractTimeStretch):
         self.scale = scale
 
     def states(self, jam):
-        '''Set the state for a transformation object.
-
-        For a random time stretch, this corresponds to sampling
-        from the stretch distribution.
-        '''
-
         rates = np.random.lognormal(mean=self.location,
                                     sigma=self.scale,
                                     size=self.n_samples)
