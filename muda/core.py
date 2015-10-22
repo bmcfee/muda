@@ -10,21 +10,38 @@ import jsonpickle
 
 import six
 
+__all__ = ['load_jam_audio', 'save', 'jam_pack', 'serialize', 'deserialize']
 
 def jam_pack(jam, **kwargs):
     '''Pack data into a jams sandbox.
+
+    If not already present, this creates a `muda` field within `jam.sandbox`,
+    along with `history` and `state` arrays which are populated by deformation
+    objects.
+
+    Any additional fields can be added to the `muda` sandbox by supplying
+    keyword arguments.
 
     Parameters
     ----------
     jam : jams.JAMS
         A JAMS object
 
+    Returns
+    -------
+    jam : jams.JAMS
+        The updated JAMS object
+
     Examples
     --------
-
-    >>> y, sr = librosa.load(librosa.util.example_audio_file())
     >>> jam = jams.JAMS()
-    >>> muda.jam_pack(jam, _audio=dict(y=y, sr=sr))
+    >>> muda.jam_pack(jam, my_data=dict(foo=5, bar=None))
+    >>> jam.sandbox
+    <Sandbox: muda>
+    >>> jam.sandbox.muda
+    <Sandbox: state, my_data, history>
+    >>> jam.sandbox.muda.my_data
+    {'foo': 5, 'bar': None}
     '''
 
     if not hasattr(jam.sandbox, 'muda'):
@@ -40,8 +57,9 @@ def load_jam_audio(jam_in, audio_file, **kwargs):
 
     Parameters
     ----------
-    jam_in : str or jams.JAMS
-        JAM filename to load
+    jam_in : str, file descriptor, or jams.JAMS
+        JAMS filename, open file-descriptor, or object to load.
+        See ``jams.load`` for acceptable formats.
 
     audio_file : str
         Audio filename to load
@@ -54,6 +72,10 @@ def load_jam_audio(jam_in, audio_file, **kwargs):
     jam : jams.JAMS
         A jams object with audio data in the top-level sandbox
 
+    See Also
+    --------
+    jams.load
+    librosa.core.load
     '''
 
     if isinstance(jam_in, jams.JAMS):
@@ -135,6 +157,13 @@ def serialize(transform, **kwargs):
     See Also
     --------
     deserialize
+
+    Examples
+    --------
+    >>> D = muda.deformers.TimeStretch(rate=1.5)
+    >>> muda.serialize(D)
+    '{"params": {"rate": 1.5},
+      "__class__": {"py/type": "muda.deformers.time.TimeStretch"}}'
     '''
 
     params = transform.get_params()
@@ -160,6 +189,14 @@ def deserialize(encoded, **kwargs):
     See Also
     --------
     serialize
+
+    Examples
+    --------
+    >>> D = muda.deformers.TimeStretch(rate=1.5)
+    >>> D_serial = muda.serialize(D)
+    >>> D2 = muda.deserialize(D_serial)
+    >>> D2
+    TimeStretch(rate=1.5)
     '''
 
     params = jsonpickle.decode(encoded, **kwargs)

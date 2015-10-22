@@ -1,2 +1,1 @@
-git+git://github.com/marl/jams.git@dvelop
-numpydoc
+numpydoc>=0.5

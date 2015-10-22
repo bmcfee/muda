@@ -68,15 +68,12 @@ class BaseTransformer(object):
                                            offset=len(class_name),),)
 
     def __init__(self):
-        '''Base-class initialization'''
         self.dispatch = OrderedDict()
 
     def states(self, jam):
-        '''Iterate the state object for a static transformer'''
         raise NotImplementedError
 
     def _register(self, pattern, function):
-        '''Register a deformation function against a namespace pattern'''
         self.dispatch[pattern] = function.__name__
 
     def _transform(self, jam, state):
@@ -127,18 +124,19 @@ class BaseTransformer(object):
     def transform(self, jam):
         '''Iterative transformation generator
 
-        Generates up to a fixed number of transformed jams
-        from a single input.
+        Applies the deformation to an input jams object.
+
+        This generates a sequence of deformed output JAMS.
 
         Parameters
         ----------
         jam : jams.JAMS
             The jam to transform
 
-        Generates
-        ---------
-        jam_out : jams.JAMS
-            Iterator of transformed jams
+        Examples
+        --------
+        >>> for jam_out in deformer.transform(jam_in):
+                process(jam_out)
         '''
 
         for state in self.states(jam):
@@ -154,26 +152,27 @@ class BaseTransformer(object):
 
 
 class Pipeline(object):
-    '''Wrapper which allows multiple transformers to be chained together'''
+    '''Wrapper which allows multiple BaseDeformer objects to be chained together
+
+    A given JAMS object will be transformed sequentially by
+    each stage of the pipeline.
+
+    The pipeline induces a graph over transformers
+
+    Attributes
+    ----------
+    steps : argument array
+        steps[i] is a tuple of `(name, Transformer)`
+
+    Examples
+    --------
+    >>> P = muda.deformers.PitchShift(semitones=5)
+    >>> T = muda.deformers.TimeStretch(speed=1.25)
+    >>> Pipe = muda.Pipeline(steps=[('Pitch:maj3', P), ('Speed:1.25x', T)])
+    >>> output_jams = list(Pipe.transform(jam_in))
+    '''
 
     def __init__(self, steps=None):
-        '''Transformation pipeline.
-
-        A given JAMS object will be transformed sequentially by
-        each stage of the pipeline.
-
-        Parameters
-        ----------
-        steps : argument array
-            steps[i] is a tuple of `(name, Transformer)`
-
-        Examples
-        --------
-        >>> P = muda.deformers.PitchShift(semitones=5)
-        >>> T = muda.deformers.TimeStretch(speed=1.25)
-        >>> Pipe = Pipeline(steps=[('Pitch:maj3', P), ('Speed:1.25x', T)])
-        >>> output = Pipe.transform(data)
-        '''
 
         names, transformers = zip(*steps)
 
@@ -226,10 +225,6 @@ class Pipeline(object):
         ----------
         jam : jams.JAMS
             The jam object to transform
-
-        Generates
-        ---------
-        jam_stream : iterable
 
         See also
         --------

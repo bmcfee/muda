@@ -72,28 +72,20 @@ class AbstractPitchShift(BaseTransformer):
 
     @staticmethod
     def audio(mudabox, state):
-        '''Deform the audio'''
-
         mudabox._audio['y'] = pyrb.pitch_shift(mudabox._audio['y'],
                                                mudabox._audio['sr'],
                                                state['n_semitones'])
 
     @staticmethod
     def deform_frequency(annotation, state):
-        '''Deform frequency-valued annotations'''
-
         annotation.data.value *= 2.0 ** (state['n_semitones'] / 12.0)
 
     @staticmethod
     def deform_midi(annotation, state):
-        '''Deform pitch-midi annotations'''
-
         annotation.data.value += state['n_semitones']
 
     @staticmethod
     def deform_tonic(annotation, state):
-        '''Deform the tonic'''
-
         # First, figure out the tuning after deformation
         if -0.5 < (state['tuning'] + state['n_semitones']) <= 0.5:
             # If our tuning was off by more than the deformation,
@@ -103,11 +95,8 @@ class AbstractPitchShift(BaseTransformer):
         for obs in annotation.data.value:
             obs['tonic'] = transpose(obs['tonic'], state['n_semitones'])
 
-
     @staticmethod
     def deform_note(annotation, state):
-        '''Deform note-valued annotations (chord or key)'''
-
         # First, figure out the tuning after deformation
         if -0.5 < (state['tuning'] + state['n_semitones']) <= 0.5:
             # If our tuning was off by more than the deformation,
@@ -119,44 +108,77 @@ class AbstractPitchShift(BaseTransformer):
 
 
 class PitchShift(AbstractPitchShift):
-    '''Static pitch shifting by (fractional) semitones'''
+    '''Static pitch shifting by (fractional) semitones
+
+    This transformation affects the following attributes:
+
+    - Annotations
+        - key_mode
+        - chord, chord_harte, chord_roman
+        - pitch_hz, pitch_midi, pitch_class
+    - Audio
+
+    Attributes
+    ----------
+    n_semitones : float
+        The number of semitones to transpose the signal.
+        Can be positive, negative, integral, or fractional.
+
+    See Also
+    --------
+    RandomPitchShift
+    LinearPitchShift
+
+    Examples
+    --------
+    >>> # Shift down by a quarter-tone
+    >>> D = muda.deformers.PitchShift(n_semitones=-0.5)
+    '''
+
     def __init__(self, n_semitones=1):
-        '''Pitch shifting
-
-        Parameters
-        ----------
-        n_semitones : float
-            The number of semitones to transpose the signal.
-            Can be positive, negative, integral, or fractional.
-        '''
-
         AbstractPitchShift.__init__(self)
         self.n_semitones = float(n_semitones)
 
     def states(self, jam):
-
         for state in AbstractPitchShift.states(self, jam):
             state['n_semitones'] = self.n_semitones
             yield state
 
 
 class RandomPitchShift(AbstractPitchShift):
-    '''Randomized pitch shifter'''
+    '''Randomized pitch shifter
+
+    Pitch is transposed by a normally distributed random variable.
+
+    This transformation affects the following attributes:
+
+    - Annotations
+        - key_mode
+        - chord, chord_harte, chord_roman
+        - pitch_hz, pitch_midi, pitch_class
+    - Audio
+
+    Attributes
+    ----------
+    n_samples : int > 0
+        The number of samples to generate per input
+
+    mean : float
+    sigma : float > 0
+        The parameters of the normal distribution for sampling
+        pitch shifts
+
+    See Also
+    --------
+    PitchShift
+    LinearPitchShift
+
+    Examples
+    --------
+    >>> # 5 random shifts with unit variance and mean of 1 semitone
+    >>> D = muda.deformers.PitchShift(n_samples=5, mean=1.0, sigma=1)
+    '''
     def __init__(self, n_samples=3, mean=0.0, sigma=1.0):
-        '''Randomized pitch shifting.
-
-        Pitch is transposed by a normally distributed random variable.
-
-        Parameters
-        ----------
-        n_samples : int > 0 or None
-            The number of samples to generate per input
-
-        mean : float
-        sigma : float > 0
-            The parameters of the normal distribution for sampling
-            pitch shifts
-        '''
         AbstractPitchShift.__init__(self)
 
         if sigma <= 0:
@@ -170,8 +192,6 @@ class RandomPitchShift(AbstractPitchShift):
         self.sigma = float(sigma)
 
     def states(self, jam):
-        '''Get the randomized state for this transformation instance'''
-
         # Sample the deformation
         for state in AbstractPitchShift.states(self, jam):
             for _ in range(self.n_samples):
@@ -182,10 +202,36 @@ class RandomPitchShift(AbstractPitchShift):
 
 
 class LinearPitchShift(AbstractPitchShift):
-    '''Linearly spaced pitch shift generator'''
-    def __init__(self, n_samples=3, lower=-1, upper=1):
-        '''Generate pitch-shifted examples spaced linearly'''
+    '''Linearly spaced pitch shift generator
 
+    This transformation affects the following attributes:
+
+    - Annotations
+        - key_mode
+        - chord, chord_harte, chord_roman
+        - pitch_hz, pitch_midi, pitch_class
+    - Audio
+
+    Attributes
+    ----------
+    n_samples : int > 0
+        The number of samples to generate per input
+
+    lower : float
+    upper : float
+        The lower and upper bounds for the shift sampling
+
+    See Also
+    --------
+    PitchShift
+    RandomPitchShift
+
+    Examples
+    --------
+    >>> # 5 shifts spaced between -2 and +2 semitones
+    >>> D = muda.deformers.LinearPitchShift(n_samples=5, lower=-2, upper=2)
+    '''
+    def __init__(self, n_samples=3, lower=-1, upper=1):
         AbstractPitchShift.__init__(self)
 
         if upper <= lower:
@@ -199,8 +245,6 @@ class LinearPitchShift(AbstractPitchShift):
         self.upper = float(upper)
 
     def states(self, jam):
-        '''Set the state for the transformation object'''
-
         shifts = np.linspace(self.lower,
                              self.upper,
                              num=self.n_samples,

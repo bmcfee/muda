@@ -94,11 +94,38 @@ def drc(y, sr, preset):
 
 
 class DynamicRangeCompression(BaseTransformer):
-    '''Dynamic range compression via sox'''
+    '''Dynamic range compression.
+
+    For each DRC preset configuration, one deformation is generated.
+
+    This transformation affects the following attributes:
+
+    - Audio
+
+    Attributes
+    ----------
+    preset : str or list of str
+        One or more supported preset values:
+        - radio
+        - film standard
+        - film light
+        - music standard
+        - music light
+        - speech
+
+
+    Examples
+    --------
+    >>> # A single preset
+    >>> drc = muda.deformers.DynamicRangeCompression(preset='radio')
+    >>> # Multiple presets
+    >>> drc = muda.deformers.DynamicRangeCompression(preset=['film standard',
+    ...                                                      'film light'])
+    >>> # All presets
+    >>> drc = muda.deformers.DynamicRangeCompression(preset=muda.deformers.PRESETS.keys())
+    '''
 
     def __init__(self, preset=None):
-        '''DRC'''
-
         BaseTransformer.__init__(self)
 
         if isinstance(preset, six.string_types):
@@ -116,8 +143,6 @@ class DynamicRangeCompression(BaseTransformer):
 
     @staticmethod
     def audio(mudabox, state):
-        '''Deform the audio'''
-
         mudabox._audio['y'] = drc(mudabox._audio['y'],
                                   mudabox._audio['sr'],
                                   state['preset'])
