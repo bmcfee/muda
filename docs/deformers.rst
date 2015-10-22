@@ -4,6 +4,11 @@ Deformation reference
 =====================
 .. module:: muda.deformers
 
+Utilities
+---------
+.. autoclass:: Bypass
+    :no-members:
+    :undoc-members:
 
 Audio deformers
 ---------------
