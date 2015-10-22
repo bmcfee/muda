@@ -7,3 +7,8 @@ muda
 
 A library for *Mu*sical *d*ata *a*ugmentation.
 
+**muda** package implements annotation-aware musical data augmentation, as described in
+the [muda paper](http://bmcfee.github.io/papers/ismir2015_augmentation.pdf).
+
+The goal of this package is to make it easy for practitioners to consistently apply
+perturbations to annotated music data for the purpose of fitting statistical models.
