@@ -19,6 +19,11 @@ def jam_pack(jam, **kwargs):
     jam : jams.JAMS
         A JAMS object
 
+    Return
+    ------
+    jam
+        The updated JAMS object
+
     Examples
     --------
 
@@ -40,8 +45,9 @@ def load_jam_audio(jam_in, audio_file, **kwargs):
 
     Parameters
     ----------
-    jam_in : str or jams.JAMS
-        JAM filename to load
+    jam_in : str, file descriptor, or jams.JAMS
+        JAMS filename, open filedescriptor, or object to load.
+        See ``jams.load` for acceptable formats.
 
     audio_file : str
         Audio filename to load
@@ -54,6 +60,10 @@ def load_jam_audio(jam_in, audio_file, **kwargs):
     jam : jams.JAMS
         A jams object with audio data in the top-level sandbox
 
+    See Also
+    --------
+    jams.load
+    librosa.load
     '''
 
     if isinstance(jam_in, jams.JAMS):
@@ -135,6 +145,13 @@ def serialize(transform, **kwargs):
     See Also
     --------
     deserialize
+
+    Examples
+    --------
+    >>> D = muda.deformers.TimeStretch(rate=1.5)
+    >>> muda.serialize(D)
+    '{"params": {"rate": 1.5},
+      "__class__": {"py/type": "muda.deformers.time.TimeStretch"}}'
     '''
 
     params = transform.get_params()
@@ -160,6 +177,14 @@ def deserialize(encoded, **kwargs):
     See Also
     --------
     serialize
+
+    Examples
+    --------
+    >>> D = muda.deformers.TimeStretch(rate=1.5)
+    >>> D_serial = muda.serialize(D)
+    >>> D2 = muda.deserialize(D_serial)
+    >>> D2
+    TimeStretch(rate=1.5)
     '''
 
     params = jsonpickle.decode(encoded, **kwargs)

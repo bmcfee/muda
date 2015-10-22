@@ -293,4 +293,5 @@ intersphinx_mapping = {'python': ('http://docs.python.org/2', None),
                        'np': ('http://docs.scipy.org/doc/numpy/', None),
                        'scipy': ('http://docs.scipy.org/doc/scipy/reference/', None),
                        'sklearn': ('http://scikit-learn.org/stable/', None),
+                       'librosa': ('http://bmcfee.github.io/librosa', None),
                        'jams': ('http://pythonhosted.org/jams', None)}
