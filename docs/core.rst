@@ -1,15 +1,20 @@
 .. _core:
 
-Core functions
-==============
+MUDA Core
+---------
 
 .. module:: muda
 
+Functions
+=========
+
+.. automodule:: muda.core
+    :members:
+
+Classes
+=======
 .. autoclass:: Pipeline
     :members:
 
 .. autoclass:: BaseTransformer
-    :members:
-
-.. automodule:: muda.core
     :members:
