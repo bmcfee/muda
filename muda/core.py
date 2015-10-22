@@ -10,6 +10,7 @@ import jsonpickle
 
 import six
 
+__all__ = ['load_jam_audio', 'save', 'jam_pack', 'serialize', 'deserialize']
 
 def jam_pack(jam, **kwargs):
     '''Pack data into a jams sandbox.
@@ -19,9 +20,9 @@ def jam_pack(jam, **kwargs):
     jam : jams.JAMS
         A JAMS object
 
-    Return
-    ------
-    jam
+    Returns
+    -------
+    jam : jams.JAMS
         The updated JAMS object
 
     Examples
@@ -46,8 +47,8 @@ def load_jam_audio(jam_in, audio_file, **kwargs):
     Parameters
     ----------
     jam_in : str, file descriptor, or jams.JAMS
-        JAMS filename, open filedescriptor, or object to load.
-        See ``jams.load` for acceptable formats.
+        JAMS filename, open file-descriptor, or object to load.
+        See ``jams.load`` for acceptable formats.
 
     audio_file : str
         Audio filename to load
@@ -63,7 +64,7 @@ def load_jam_audio(jam_in, audio_file, **kwargs):
     See Also
     --------
     jams.load
-    librosa.load
+    librosa.core.load
     '''
 
     if isinstance(jam_in, jams.JAMS):

@@ -8,16 +8,16 @@ Utilities
 ---------
 .. autoclass:: Bypass
     :no-members:
-    :undoc-members:
+    :no-undoc-members:
 
 Audio deformers
 ---------------
 .. autoclass:: BackgroundNoise
     :no-members:
-    :undoc-members:
+    :no-undoc-members:
 .. autoclass:: DynamicRangeCompression
     :no-members:
-    :undoc-members:
+    :no-undoc-members:
 
 
 Time-stretch deformers
@@ -25,25 +25,25 @@ Time-stretch deformers
 
 .. autoclass:: TimeStretch
     :no-members:
-    :undoc-members:
+    :no-undoc-members:
 
 .. autoclass:: RandomTimeStretch
     :no-members:
-    :undoc-members:
+    :no-undoc-members:
 .. autoclass:: LogspaceTimeStretch
     :no-members:
-    :undoc-members:
+    :no-undoc-members:
 
 
 Pitch-shift deformers
 ---------------------
 .. autoclass:: PitchShift
     :no-members:
-    :undoc-members:
+    :no-undoc-members:
 .. autoclass:: RandomPitchShift
     :no-members:
-    :undoc-members:
+    :no-undoc-members:
 .. autoclass:: LinearPitchShift
     :no-members:
-    :undoc-members:
+    :no-undoc-members:
 
