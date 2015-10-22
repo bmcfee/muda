@@ -88,6 +88,11 @@ class TimeStretch(AbstractTimeStretch):
     --------
     >>> D = muda.deformers.TimeStretch(rate=2.0)
     >>> out_jams = list(D.transform(jam_in))
+
+    See Also
+    --------
+    LogspaceTimeStretch
+    RandomTimeStretch
     '''
     def __init__(self, rate=1.2):
         '''Time stretching'''
@@ -103,7 +108,7 @@ class TimeStretch(AbstractTimeStretch):
 
 class LogspaceTimeStretch(AbstractTimeStretch):
     '''Logarithmically spaced time stretching.
-    
+
     `n_samples` are generated with stretching spaced logarithmically
     between `2.0**lower` and 2`.0**upper`.
 
@@ -124,6 +129,11 @@ class LogspaceTimeStretch(AbstractTimeStretch):
     lower : float 
     upper : float > lower
         Minimum and maximum bounds on the stretch parameters
+
+    See Also
+    --------
+    TimeStretch
+    RandomTimeStretch
     '''
     def __init__(self, n_samples=3, lower=0.8, upper=1.2):
         AbstractTimeStretch.__init__(self)
@@ -147,13 +157,12 @@ class LogspaceTimeStretch(AbstractTimeStretch):
         for rate in rates:
             yield dict(rate=rate)
 
-
 class RandomTimeStretch(AbstractTimeStretch):
     '''Random time stretching
 
     For each deformation, the rate parameter is drawn from a
     log-normal distribution with parameters `(location, scale)`
-    
+
     - Annotations
         - all: time, duration
         - tempo: values

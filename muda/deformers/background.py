@@ -68,26 +68,32 @@ def sample_clip(filename, n_samples, sr, mono=True):
 
 
 class BackgroundNoise(BaseTransformer):
-    '''Additive background noise deformations'''
+    '''Additive background noise deformations.
+
+    From each background noise signal, `n_samples` clips are randomly
+    extracted and mixed with the input audio with a random mixing coefficient
+    sampled uniformly between `weight_min` and `weight_max`.
+
+    This transformation affects the following attributes:
+
+    - Audio
+
+    Attributes
+    ----------
+    n_samples : int > 0
+        The number of samples to generate with each noise source
+
+    files : str or list of str
+        Path to audio file(s) on disk containing background signals
+
+    weight_min : float in (0.0, 1.0)
+    weight_max : float in (0.0, 1.0)
+        The minimum and maximum weight to combine input signals
+
+        `y_out = (1 - weight) * y + weight * y_noise`
+    '''
 
     def __init__(self, n_samples=1, files=None, weight_min=0.1, weight_max=0.5):
-        '''Additive background noise deformations
-
-        Parameters
-        ----------
-        n_samples : int > 0
-            The number of samples to generate with each noise source
-
-        files : str or list of str
-            Path to audio file(s) on disk containing background signals
-
-        weight_min : float in (0.0, 1.0)
-        weight_max : float in (0.0, 1.0)
-            The minimum and maximum weight to combine input signals
-
-            `y_out = (1 - weight) * y + weight * y_noise`
-        '''
-
         if n_samples <= 0:
             raise ValueError('n_samples must be strictly positive')
 
@@ -109,7 +115,6 @@ class BackgroundNoise(BaseTransformer):
         self.weight_max = weight_max
 
     def states(self, jam):
-        '''Iterate the background noise state'''
 
         for fname in self.files:
             for _ in range(self.n_samples):
@@ -119,8 +124,6 @@ class BackgroundNoise(BaseTransformer):
                                                     size=None))
 
     def audio(self, mudabox, state):
-        '''Deform the audio'''
-
         weight = state['weight']
         fname = state['filename']
 
