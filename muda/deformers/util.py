@@ -37,9 +37,6 @@ class Bypass(BaseTransformer):
 
         self.transformer = transformer
 
-    def states(self):
-        raise NotImplementedError
-
     def transform(self, jam):
         '''Bypass transformations.
 
