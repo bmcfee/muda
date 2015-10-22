@@ -12,3 +12,14 @@ the [muda paper](http://bmcfee.github.io/papers/ismir2015_augmentation.pdf).
 
 The goal of this package is to make it easy for practitioners to consistently apply
 perturbations to annotated music data for the purpose of fitting statistical models.
+
+
+```
+@inproceedings{mcfee2015_augmentation,
+    author  = {McFee,, B. and Humphrey,, E.J. and Bello, J.P.},
+    year    = {2015},
+    title   = {A software framework for musical data augmentation},
+    booktitle = {16th International Society for Music Information Retrieval Conference},
+    series  = {ISMIR}
+}
+```
