@@ -12,14 +12,27 @@ perturbations to annotated music data for the purpose of fitting statistical mod
     2015.
 
 
-Architecture
+Introduction
 ------------
+.. note:: Before reading ahead, it is recommended to familiarize yourself with the `JAMS documentation <http://pythonhosted.org/jams/>`_.
 
-`muda` 
+The design of `muda` is patterned loosely after the `Transformer` abstraction in `scikit-learn <http://scikit-learn.org/stable/>`_.
+At a high level, each input example consists of an audio clip (with sampling rate) as a `numpy.ndarray` and its annotations stored 
+in JAMS format.  To streamline the deformation process, audio data is first stored within the JAMS object so that only a single payload
+needs to be transferred throughout the system.
+
+*Deformation objects* (``muda.core.BaseTransformer``) have a single user-facing method, ``transform()``,
+which accepts an input JAMS object and generates a sequence of deformations of that object. 
+By operating on JAMS objects, the deformation object can simultaneously modify both the audio and all
+of its corresponding annotations.
+
+After applying deformations, the modified audio and annotations can be stored to disk by calling ``muda.save()``.
+Alternatively, because transformations are generators, results can be processed online by a stochastic learning algorithm.
 
 
 Example usage
 -------------
+This section gives a quick introduction to using `muda` through example applications.
 
 Loading data
 ^^^^^^^^^^^^
