@@ -15,6 +15,13 @@ __all__ = ['load_jam_audio', 'save', 'jam_pack', 'serialize', 'deserialize']
 def jam_pack(jam, **kwargs):
     '''Pack data into a jams sandbox.
 
+    If not already present, this creates a `muda` field within `jam.sandbox`,
+    along with `history` and `state` arrays which are populated by deformation
+    objects.
+
+    Any additional fields can be added to the `muda` sandbox by supplying
+    keyword arguments.
+
     Parameters
     ----------
     jam : jams.JAMS
@@ -27,10 +34,14 @@ def jam_pack(jam, **kwargs):
 
     Examples
     --------
-
-    >>> y, sr = librosa.load(librosa.util.example_audio_file())
     >>> jam = jams.JAMS()
-    >>> muda.jam_pack(jam, _audio=dict(y=y, sr=sr))
+    >>> muda.jam_pack(jam, my_data=dict(foo=5, bar=None))
+    >>> jam.sandbox
+    <Sandbox: muda>
+    >>> jam.sandbox.muda
+    <Sandbox: state, my_data, history>
+    >>> jam.sandbox.muda.my_data
+    {'foo': 5, 'bar': None}
     '''
 
     if not hasattr(jam.sandbox, 'muda'):
