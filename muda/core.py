@@ -10,14 +10,16 @@ import jsonpickle
 
 import six
 
+from .version import version
+
 __all__ = ['load_jam_audio', 'save', 'jam_pack', 'serialize', 'deserialize']
 
 def jam_pack(jam, **kwargs):
     '''Pack data into a jams sandbox.
 
     If not already present, this creates a `muda` field within `jam.sandbox`,
-    along with `history` and `state` arrays which are populated by deformation
-    objects.
+    along with `history`, `state`, and version arrays which are populated by 
+    deformation objects.
 
     Any additional fields can be added to the `muda` sandbox by supplying
     keyword arguments.
@@ -39,13 +41,18 @@ def jam_pack(jam, **kwargs):
     >>> jam.sandbox
     <Sandbox: muda>
     >>> jam.sandbox.muda
-    <Sandbox: state, my_data, history>
+    <Sandbox: state, version, my_data, history>
     >>> jam.sandbox.muda.my_data
     {'foo': 5, 'bar': None}
     '''
 
     if not hasattr(jam.sandbox, 'muda'):
-        jam.sandbox.muda = jams.Sandbox(history=[], state=[])
+        jam.sandbox.muda = jams.Sandbox(history=[],
+                                        state=[],
+                                        version=dict(muda=version,
+                                                     librosa=librosa.__version__,
+                                                     jams=jams.__version__,
+                                                     pysoundfile=psf.__version__))
 
     jam.sandbox.muda.update(**kwargs)
 
