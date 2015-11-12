@@ -33,9 +33,6 @@ if [ ! -d "$src" ]; then
         source $src/bin/activate $ENV_NAME
 
         pip install python-coveralls
-        pip install pysoundfile jsonpickle
-        pip install mir_eval audioread decorator librosa pyrubberband
-        pip install git+https://github.com/marl/jams.git
 
         source $src/bin/deactivate
     popd
