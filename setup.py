@@ -13,6 +13,7 @@ setup(
     url='http://github.com/bmcfee/muda',
     download_url='http://github.com/bmcfee/muda/releases',
     packages=find_packages(),
+    package_data={'': ['deformers/data/*']},
     long_description="""Musical data augmentation.""",
     classifiers=[
         "License :: OSI Approved :: ISC License (ISCL)",
