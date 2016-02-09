@@ -158,6 +158,7 @@ API Reference
 
     core
     deformers
+    changes
 
 Contribute
 ----------
