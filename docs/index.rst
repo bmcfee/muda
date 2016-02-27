@@ -67,7 +67,7 @@ an input.  Each deformed example is then saved to disk.
 .. code-block:: python
 
     >>> pitch = muda.deformers.LinearPitchShift(n_samples=5, lower=-1, upper=1)
-    >>> for i, jam_out in pitch.transform(j_orig):
+    >>> for i, jam_out in enumerate(pitch.transform(j_orig)):
             muda.save('output_{:02d}.ogg'.format(i),
     ...               'output_{:02d}.jams'.format(i),
     ...               jam_out)
