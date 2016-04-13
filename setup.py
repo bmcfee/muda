@@ -38,6 +38,7 @@ setup(
         'sklearn',
         'six',
         'jsonpickle',
+        'cffi'
     ],
     extras_require={
         'docs': ['numpydoc']
