@@ -135,7 +135,7 @@ class LogspaceTimeStretch(AbstractTimeStretch):
     TimeStretch
     RandomTimeStretch
     '''
-    def __init__(self, n_samples=3, lower=0.8, upper=1.2):
+    def __init__(self, n_samples=3, lower=-0.3, upper=0.3):
         AbstractTimeStretch.__init__(self)
 
         if upper <= lower:
