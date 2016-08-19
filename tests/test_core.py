@@ -43,6 +43,9 @@ def test_load_jam_audio():
         eq_(jam.file_metadata.duration,
             librosa.get_duration(**jam.sandbox.muda._audio))
 
+    # Add an empty jams test for missing duration
+    yield __test, jams.JAMS(), 'data/fixture.wav'
+
     yield __test, 'data/fixture.jams', 'data/fixture.wav'
 
     yield __test, jams.load('data/fixture.jams'), 'data/fixture.wav'

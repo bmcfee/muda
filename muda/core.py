@@ -79,6 +79,12 @@ def load_jam_audio(jam_in, audio_file, **kwargs):
     jam : jams.JAMS
         A jams object with audio data in the top-level sandbox
 
+    Notes
+    -----
+    This operation can modify the `file_metadata.duration` field of `jam_in`:
+    If it is not currently set, it will be populated with the duration of the
+    audio file.
+
     See Also
     --------
     jams.load
@@ -91,6 +97,9 @@ def load_jam_audio(jam_in, audio_file, **kwargs):
         jam = jams.load(jam_in)
 
     y, sr = librosa.load(audio_file, **kwargs)
+
+    if jam.file_metadata.duration is None:
+        jam.file_metadata.duration = librosa.get_duration(y=y, sr=sr)
 
     return jam_pack(jam, _audio=dict(y=y, sr=sr))
 
