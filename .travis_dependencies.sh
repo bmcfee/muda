@@ -11,7 +11,7 @@ conda_create ()
     conda update -q conda
     conda config --add channels pypi
     conda info -a
-    deps='pip numpy scipy nose pandas matplotlib'
+    deps='pip numpy scipy pytest pandas matplotlib'
 
     conda create -q -n $ENV_NAME "python=$TRAVIS_PYTHON_VERSION" $deps
 }
@@ -32,7 +32,7 @@ if [ ! -d "$src" ]; then
 
         source $src/bin/activate $ENV_NAME
 
-        pip install python-coveralls
+        pip install python-coveralls pytest-cov pytest-faulthandler
 
         source $src/bin/deactivate
     popd
