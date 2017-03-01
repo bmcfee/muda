@@ -84,7 +84,7 @@ def test_timestretch(rate, jam_fixture):
 
     jam_orig = deepcopy(jam_fixture)
 
-    for jam_new in D.transform(jam_fixture):
+    for jam_new in D.transform(jam_orig):
         # Verify that the original jam reference hasn't changed
         assert jam_new is not jam_fixture
         __test_time(jam_orig, jam_fixture, 1.0)
@@ -119,7 +119,7 @@ def test_log_timestretch(n_samples, lower, upper, jam_fixture):
     jam_orig = deepcopy(jam_fixture)
 
     n_out = 0
-    for jam_new in D.transform(jam_fixture):
+    for jam_new in D.transform(jam_orig):
         # Verify that the original jam reference hasn't changed
         assert jam_new is not jam_fixture
         __test_time(jam_orig, jam_fixture, 1.0)
@@ -149,9 +149,9 @@ def test_random_timestretch(n_samples, scale, jam_fixture):
     jam_orig = deepcopy(jam_fixture)
 
     n_out = 0
-    for jam_new in D.transform(jam_fixture):
+    for jam_new in D.transform(jam_orig):
         # Verify that the original jam reference hasn't changed
-        assert jam_new is not jam_fixture
+        assert jam_new is not jam_orig
         __test_time(jam_orig, jam_fixture, 1.0)
 
         # Verify that the state and history objects are intact
@@ -182,15 +182,14 @@ def test_bypass(D_simple, jam_fixture):
 
     jam_orig = deepcopy(jam_fixture)
 
-    generator = D.transform(jam_fixture)
+    generator = D.transform(jam_orig)
     jam_new = six.next(generator)
-    assert jam_new is jam_fixture
+    assert jam_new is jam_orig
     __test_time(jam_orig, jam_fixture, 1.0)
 
     for jam_new in generator:
         # Verify that the original jam reference hasn't changed
-        assert jam_new is not jam_fixture
-        __test_time(jam_orig, jam_fixture, 1.0)
+        assert jam_new is not jam_orig
 
         # Verify that the state and history objects are intact
         __test_deformer_history(D_simple, jam_new.sandbox.muda.history[-1])
@@ -264,9 +263,9 @@ def test_pitchshift(n_semitones, jam_fixture):
 
     jam_orig = deepcopy(jam_fixture)
 
-    for jam_new in D.transform(jam_fixture):
+    for jam_new in D.transform(jam_orig):
         # Verify that the original jam reference hasn't changed
-        assert jam_new is not jam_fixture
+        assert jam_new is not jam_orig
         __test_pitch(jam_orig, jam_fixture, 0.0, 0)
 
         # Verify that the state and history objects are intact
@@ -285,27 +284,26 @@ def test_pitchshift(n_semitones, jam_fixture):
                           pytest.mark.xfail(0, raises=ValueError)])
 def test_random_pitchshift(n_samples, sigma, jam_fixture):
 
-    def __test(n_samples, jam):
-        D = muda.deformers.RandomPitchShift(n_samples=n_samples, sigma=sigma)
+    D = muda.deformers.RandomPitchShift(n_samples=n_samples, sigma=sigma)
 
-        jam_orig = deepcopy(jam)
+    jam_orig = deepcopy(jam_fixture)
 
-        n_out = 0
-        for jam_new in D.transform(jam):
-            # Verify that the original jam reference hasn't changed
-            assert jam_new is not jam
-            __test_pitch(jam_orig, jam, 0.0, 0.0)
+    n_out = 0
+    for jam_new in D.transform(jam_orig):
+        # Verify that the original jam reference hasn't changed
+        assert jam_new is not jam_orig
+        __test_pitch(jam_orig, jam_fixture, 0.0, 0.0)
 
-            # Verify that the state and history objects are intact
-            __test_deformer_history(D, jam_new.sandbox.muda.history[-1])
+        # Verify that the state and history objects are intact
+        __test_deformer_history(D, jam_new.sandbox.muda.history[-1])
 
-            d_state = jam_new.sandbox.muda.history[-1]['state']
-            d_tones = d_state['n_semitones']
-            tuning = d_state['tuning']
-            __test_pitch(jam_orig, jam_new, d_tones, tuning)
-            n_out += 1
+        d_state = jam_new.sandbox.muda.history[-1]['state']
+        d_tones = d_state['n_semitones']
+        tuning = d_state['tuning']
+        __test_pitch(jam_orig, jam_new, d_tones, tuning)
+        n_out += 1
 
-        assert n_out == n_samples
+    assert n_out == n_samples
 
 
 @pytest.mark.parametrize('lower, upper',
@@ -320,9 +318,9 @@ def test_linear_pitchshift(n_samples, lower, upper, jam_fixture):
     jam_orig = deepcopy(jam_fixture)
 
     n_out = 0
-    for jam_new in D.transform(jam_fixture):
+    for jam_new in D.transform(jam_orig):
         # Verify that the original jam reference hasn't changed
-        assert jam_new is not jam_fixture
+        assert jam_new is not jam_orig
         __test_pitch(jam_orig, jam_fixture, 0.0, 0.0)
 
         # Verify that the state and history objects are intact
@@ -413,8 +411,8 @@ def test_pipeline(jam_fixture):
 
     jam_orig = deepcopy(jam_fixture)
 
-    for jam_new in P.transform(jam_fixture):
-        assert jam_new is not jam_fixture
+    for jam_new in P.transform(jam_orig):
+        assert jam_new is not jam_orig
         __test_time(jam_orig, jam_fixture, 1.0)
 
         # Verify that the state and history objects are intact
