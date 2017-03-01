@@ -23,3 +23,7 @@ Classes
 .. autoclass:: Pipeline
     :members:
     :no-undoc-members:
+
+.. autoclass:: Union
+    :members:
+    :no-undoc-members:

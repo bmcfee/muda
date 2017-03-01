@@ -4,10 +4,11 @@
 import numpy as np
 import copy
 from collections import OrderedDict
+import itertools
 import six
 import inspect
 
-__all__ = ['BaseTransformer', 'Pipeline']
+__all__ = ['BaseTransformer', 'Pipeline', 'Union']
 
 
 class BaseTransformer(object):
@@ -171,6 +172,10 @@ class Pipeline(object):
     >>> T = muda.deformers.TimeStretch(speed=1.25)
     >>> Pipe = muda.Pipeline(steps=[('Pitch:maj3', P), ('Speed:1.25x', T)])
     >>> output_jams = list(Pipe.transform(jam_in))
+
+    See Also
+    --------
+    Union
     '''
 
     def __init__(self, steps=None):
@@ -233,6 +238,108 @@ class Pipeline(object):
         '''
 
         for output in self.__recursive_transform(jam, self.steps):
+            yield output
+
+
+class Union(object):
+    '''Wrapper which allows multiple BaseDeformer objects to be combined
+    for round-robin sampling.
+
+    A given JAMS object will be transformed sequentially by
+    each element of the union, in round-robin fashion.
+    This is similar to `Pipeline`, except the deformers are independent
+    of one another in a Union, rather than applied sequentially.
+
+    Attributes
+    ----------
+    steps : argument array
+        steps[i] is a tuple of `(name, Transformer)`
+
+    Examples
+    --------
+    >>> P = muda.deformers.PitchShift(semitones=5)
+    >>> T = muda.deformers.TimeStretch(speed=1.25)
+    >>> union = muda.Union(steps=[('Pitch:maj3', P), ('Speed:1.25x', T)])
+    >>> output_jams = list(union.transform(jam_in))
+
+    See Also
+    --------
+    Pipeline
+    '''
+
+    def __init__(self, steps=None):
+
+        names, transformers = zip(*steps)
+
+        if len(set(names)) != len(steps):
+            raise ValueError("Names provided are not unique: "
+                             " {}".format(names,))
+
+        # shallow copy of steps
+        self.steps = list(zip(names, transformers))
+
+        for t in transformers:
+            if not isinstance(t, BaseTransformer):
+                raise TypeError('{:s} is not a BaseTransformer'.format(t))
+
+    def get_params(self):
+        '''Get the parameters for this object.  Returns as a dict.'''
+
+        out = {}
+        out['__class__'] = self.__class__
+        out['params'] = dict(steps=[])
+
+        for name, step in self.steps:
+            out['params']['steps'].append([name, step.get_params(deep=True)])
+
+        return out
+
+    def __repr__(self):
+        '''Pretty-print the object'''
+
+        class_name = self.__class__.__name__
+        return '{:s}({:s})'.format(class_name,
+                                   _pprint(self.get_params(),
+                                           offset=len(class_name),),)
+
+    def __serial_transform(self, jam, steps):
+        '''A serial transformation pipeline'''
+        # This uses the round-robin itertools recipe
+
+        if six.PY2:
+            attr = 'next'
+        else:
+            attr = '__next__'
+
+        pending = len(steps)
+        nexts = itertools.cycle(getattr(iter(D.transform(jam)), attr)
+                                for (name, D) in steps)
+
+        if not pending:
+            yield jam
+
+        while pending:
+            try:
+                for next_jam in nexts:
+                    yield next_jam()
+            except StopIteration:
+                pending -= 1
+                nexts = itertools.cycle(itertools.islice(nexts, pending))
+
+    def transform(self, jam):
+        '''Apply the sequence of transformations to a single jam object.
+
+        Parameters
+        ----------
+        jam : jams.JAMS
+            The jam object to transform
+
+        See also
+        --------
+        BaseTransformer.transform
+        '''
+
+        for output in self.__serial_transform(jam, self.steps):
             yield output
 
 
