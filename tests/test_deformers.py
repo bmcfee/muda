@@ -74,7 +74,7 @@ def __test_deformer_history(deformer, history):
     d_trans['__class__'] == params['__class__'].__name__
 
 
-@pytest.mark.parametrize('rate', [0.5, 1.0, 2.0,
+@pytest.mark.parametrize('rate', [0.5, 1.0, 2.0, [1.0, 1.5],
                                   pytest.mark.xfail(-1, raises=ValueError),
                                   pytest.mark.xfail(-0.5, raises=ValueError),
                                   pytest.mark.xfail(0.0, raises=ValueError)])
@@ -94,9 +94,16 @@ def test_timestretch(rate, jam_fixture):
 
         d_state = jam_new.sandbox.muda.history[-1]['state']
         d_rate = d_state['rate']
-        ap_(rate, d_rate)
+        if isinstance(rate, list):
+            assert d_rate in rate
+        else:
+            assert d_rate == rate
 
         __test_time(jam_orig, jam_new, d_rate)
+
+    # Serialization test
+    D2 = muda.deserialize(muda.serialize(D))
+    assert D.get_params() == D2.get_params()
 
 
 @pytest.fixture(params=[1, 3, 5,
@@ -135,6 +142,9 @@ def test_log_timestretch(n_samples, lower, upper, jam_fixture):
         n_out += 1
 
     assert n_samples == n_out
+    # Serialization test
+    D2 = muda.deserialize(muda.serialize(D))
+    assert D.get_params() == D2.get_params()
 
 
 @pytest.mark.parametrize('scale',
@@ -164,6 +174,9 @@ def test_random_timestretch(n_samples, scale, jam_fixture):
         n_out += 1
 
     assert n_samples == n_out
+    # Serialization test
+    D2 = muda.deserialize(muda.serialize(D))
+    assert D.get_params() == D2.get_params()
 
 
 @pytest.fixture(scope='module',
@@ -193,6 +206,9 @@ def test_bypass(D_simple, jam_fixture):
 
         # Verify that the state and history objects are intact
         __test_deformer_history(D_simple, jam_new.sandbox.muda.history[-1])
+    # Serialization test
+    D2 = muda.deserialize(muda.serialize(D))
+    assert D.get_params() == D2.get_params()
 
 
 def pstrip(x):
@@ -256,7 +272,7 @@ def __test_pitch(jam_orig, jam_new, n_semitones, tuning):
 
 
 @pytest.mark.parametrize('n_semitones',
-                         [-2, -1, -0.5, -0.25, 0, 0.25, 1.0, 1.5])
+                         [-2, -1, -0.5, -0.25, 0, 0.25, 1.0, 1.5, [-1, 1]])
 def test_pitchshift(n_semitones, jam_fixture):
     np.random.seed(0)
     D = muda.deformers.PitchShift(n_semitones=n_semitones)
@@ -274,8 +290,15 @@ def test_pitchshift(n_semitones, jam_fixture):
         d_state = jam_new.sandbox.muda.history[-1]['state']
         d_tones = d_state['n_semitones']
         tuning = d_state['tuning']
-        ap_(n_semitones, d_tones)
+        if isinstance(n_semitones, list):
+            assert d_tones in n_semitones
+        else:
+            assert d_tones == n_semitones
+
         __test_pitch(jam_orig, jam_new, d_tones, tuning)
+    # Serialization test
+    D2 = muda.deserialize(muda.serialize(D))
+    assert D.get_params() == D2.get_params()
 
 
 @pytest.mark.parametrize('sigma',
@@ -304,6 +327,9 @@ def test_random_pitchshift(n_samples, sigma, jam_fixture):
         n_out += 1
 
     assert n_out == n_samples
+    # Serialization test
+    D2 = muda.deserialize(muda.serialize(D))
+    assert D.get_params() == D2.get_params()
 
 
 @pytest.mark.parametrize('lower, upper',
@@ -335,6 +361,9 @@ def test_linear_pitchshift(n_samples, lower, upper, jam_fixture):
         n_out += 1
 
     assert n_out == n_samples
+    # Serialization test
+    D2 = muda.deserialize(muda.serialize(D))
+    assert D.get_params() == D2.get_params()
 
 
 def __test_effect(jam_orig, jam_new):
@@ -363,6 +392,9 @@ def test_drc(preset, jam_fixture):
                                jam_new.sandbox.muda['_audio']['y'])
 
         __test_effect(jam_orig, jam_new)
+    # Serialization test
+    D2 = muda.deserialize(muda.serialize(D))
+    assert D.get_params() == D2.get_params()
 
 
 @pytest.mark.parametrize('noise', ['tests/data/noise_sample.ogg',
@@ -395,6 +427,9 @@ def test_background(noise, n_samples, weight_min, weight_max, jam_fixture):
         n_out += 1
 
     assert n_out == n_samples
+    # Serialization test
+    D2 = muda.deserialize(muda.serialize(D))
+    assert D.get_params() == D2.get_params()
 
 
 @pytest.mark.xfail(raises=RuntimeError)
@@ -419,7 +454,7 @@ def test_pipeline(jam_fixture):
         __test_deformer_history(D1, jam_new.sandbox.muda.history[0])
         __test_deformer_history(D2, jam_new.sandbox.muda.history[-1])
 
-        __test_time(jam_orig, jam_new, D1.rate * D2.rate)
+        __test_time(jam_orig, jam_new, D1.rate[0] * D2.rate[0])
 
 
 @pytest.mark.xfail(raises=ValueError)
