@@ -11,7 +11,7 @@ conda_create ()
     conda update -q conda
     conda config --add channels pypi
     conda info -a
-    deps='pip numpy scipy nose pandas matplotlib scikit-learn'
+    deps='pip numpy scipy nose pandas matplotlib'
 
     conda create -q -n $ENV_NAME "python=$TRAVIS_PYTHON_VERSION" $deps
 }
