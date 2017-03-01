@@ -1,19 +1,19 @@
 #!/usr/bin/env python
 # -*- encoding: utf-8 -*-
 '''MUDA core tests'''
-
-import numpy as np
-
-import muda
-
-import jams
-import librosa
-
 import tempfile
 import os
 import six
 
-from nose.tools import eq_, raises
+import numpy as np
+
+import jams
+import librosa
+
+import muda
+
+import pytest
+
 
 def test_jam_pack():
 
@@ -33,32 +33,60 @@ def test_jam_pack():
     assert jam.sandbox.muda['sr'] == sr
 
 
-def test_load_jam_audio():
+@pytest.fixture()
+def audio_file():
+    return 'tests/data/fixture.wav'
 
-    def __test(jam_in, audio_file):
 
-        jam = muda.load_jam_audio(jam_in, audio_file)
+@pytest.fixture()
+def jam_in():
+    return 'tests/data/fixture.jams'
 
-        assert hasattr(jam.sandbox, 'muda')
 
-        eq_(jam.file_metadata.duration,
-            librosa.get_duration(**jam.sandbox.muda._audio))
+@pytest.fixture(params=[0, 1, 2, 3],
+                ids=['JAMS()',
+                     'fixture.jams',
+                     "JAMS('fixture.jams')",
+                     'fdesc'])
+def jam_loader(request):
+    if request.param == 0:
+        yield jams.JAMS()
+
+    elif request.param == 1:
+        yield 'tests/data/fixture.jams'
+
+    elif request.param == 2:
+        yield jams.load('tests/data/fixture.jams')
+
+    else:
+        with open('tests/data/fixture.jams', 'r') as fdesc:
+            yield fdesc
+
+
+def test_load_jam_audio(jam_loader, audio_file):
+
+    jam = muda.load_jam_audio(jam_loader, audio_file)
+
+    assert hasattr(jam.sandbox, 'muda')
+
+    duration = librosa.get_duration(**jam.sandbox.muda._audio)
+    assert jam.file_metadata.duration == duration
+
 
     # Add an empty jams test for missing duration
-    yield __test, jams.JAMS(), 'tests/data/fixture.wav'
+#    yield __test, jams.JAMS(), 'tests/data/fixture.wav'
 
-    yield __test, 'tests/data/fixture.jams', 'tests/data/fixture.wav'
+#    yield __test, 'tests/data/fixture.jams', 'tests/data/fixture.wav'
 
-    yield __test, jams.load('tests/data/fixture.jams'), 'tests/data/fixture.wav'
+#    yield __test, jams.load('tests/data/fixture.jams'), 'tests/data/fixture.wav'
 
-    with open('tests/data/fixture.jams', 'r') as fdesc:
-        yield __test, fdesc, 'tests/data/fixture.wav'
+#    with open('tests/data/fixture.jams', 'r') as fdesc:
+#        yield __test, fdesc, 'tests/data/fixture.wav'
 
 
-def test_save():
+def test_save(jam_in, audio_file):
 
-    jam = muda.load_jam_audio('tests/data/fixture.jams',
-                              'tests/data/fixture.wav')
+    jam = muda.load_jam_audio(jam_in, audio_file)
 
     _, jamfile = tempfile.mkstemp(suffix='.jams')
     _, audfile = tempfile.mkstemp(suffix='.wav')
@@ -75,8 +103,9 @@ def test_save():
     assert '_audio' in jam2.sandbox.muda
     assert '_audio' not in jam2_raw.sandbox.muda
 
-    eq_(jam2.file_metadata.duration,
-        librosa.get_duration(**jam2.sandbox.muda['_audio']))
+    duration = librosa.get_duration(**jam2.sandbox.muda['_audio'])
+
+    assert jam2.file_metadata.duration == duration
 
 
 def test_serialize_deformer():
@@ -85,9 +114,8 @@ def test_serialize_deformer():
     D_ser = muda.serialize(D)
     D2 = muda.deserialize(D_ser)
 
-    eq_(D.get_params(), D2.get_params())
-
     assert D is not D2
+    assert D.get_params() == D2.get_params()
 
 
 def test_serialize_pipeline():
@@ -100,17 +128,16 @@ def test_serialize_pipeline():
 
     P_new = muda.deserialize(P_ser)
 
-    eq_(P_orig.get_params(), P_new.get_params())
-
     assert P_orig is not P_new
+    assert P_orig.get_params() == P_new.get_params()
 
 
-def test_reload_jampack():
+def test_reload_jampack(jam_in, audio_file):
 
     # This test is to address #42, where mudaboxes reload as dict
     # instead of Sandbox
-    jam = muda.load_jam_audio('tests/data/fixture.jams', 'tests/data/fixture.wav')
+    jam = muda.load_jam_audio(jam_in, audio_file)
 
-    jam2 = muda.load_jam_audio(six.StringIO(jam.dumps()), 'tests/data/fixture.wav')
+    jam2 = muda.load_jam_audio(six.StringIO(jam.dumps()), audio_file)
     assert isinstance(jam.sandbox.muda, jams.Sandbox)
     assert isinstance(jam2.sandbox.muda, jams.Sandbox)
