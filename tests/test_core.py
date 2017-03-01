@@ -97,16 +97,6 @@ def test_save(jam_in, audio_file):
     assert jam2.file_metadata.duration == duration
 
 
-def test_serialize_deformer():
-
-    D = muda.deformers.LogspaceTimeStretch()
-    D_ser = muda.serialize(D)
-    D2 = muda.deserialize(D_ser)
-
-    assert D is not D2
-    assert D.get_params() == D2.get_params()
-
-
 def test_serialize_pipeline():
 
     D1 = muda.deformers.LogspaceTimeStretch()
@@ -119,6 +109,20 @@ def test_serialize_pipeline():
 
     assert P_orig is not P_new
     assert P_orig.get_params() == P_new.get_params()
+
+
+def test_serialize_union():
+
+    D1 = muda.deformers.LogspaceTimeStretch()
+    D2 = muda.deformers.LogspaceTimeStretch()
+    U_orig = muda.Union([('stretch_1', D1),
+                         ('stretch_2', D2)])
+    U_ser = muda.serialize(U_orig)
+
+    U_new = muda.deserialize(U_ser)
+
+    assert U_orig is not U_new
+    assert U_orig.get_params() == U_new.get_params()
 
 
 def test_reload_jampack(jam_in, audio_file):

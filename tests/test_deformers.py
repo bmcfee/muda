@@ -457,6 +457,30 @@ def test_pipeline(jam_fixture):
         __test_time(jam_orig, jam_new, D1.rate[0] * D2.rate[0])
 
 
+def test_union(jam_fixture):
+    D1 = muda.deformers.TimeStretch(rate=[1.0, 2.0, 3.0])
+    D2 = muda.deformers.TimeStretch(rate=[0.5, 1.5, 2.5])
+
+    rates = [1.0, 0.5, 2.0, 1.5, 3.0, 2.5]
+
+    union = muda.Union([('stretch_1', D1),
+                        ('stretch_2', D2)])
+
+    jam_orig = deepcopy(jam_fixture)
+
+    for i, jam_new in enumerate(union.transform(jam_orig)):
+        assert jam_new is not jam_orig
+        __test_time(jam_orig, jam_fixture, 1.0)
+
+        # Verify that the state and history objects are intact
+        if i % 2:
+            __test_deformer_history(D2, jam_new.sandbox.muda.history[-1])
+        else:
+            __test_deformer_history(D1, jam_new.sandbox.muda.history[-1])
+
+        __test_time(jam_orig, jam_new, rates[i])
+
+
 @pytest.mark.xfail(raises=ValueError)
 def test_bad_pipeline_unique():
     D1 = muda.deformers.TimeStretch(rate=2.0)
@@ -465,12 +489,28 @@ def test_bad_pipeline_unique():
     muda.Pipeline([('stretch', D1), ('stretch', D2)])
 
 
+@pytest.mark.xfail(raises=ValueError)
+def test_bad_union_unique():
+    D1 = muda.deformers.TimeStretch(rate=2.0)
+    D2 = muda.deformers.TimeStretch(rate=1.5)
+
+    muda.Union([('stretch', D1), ('stretch', D2)])
+
+
 @pytest.mark.xfail(raises=TypeError)
 def test_bad_pipeline_object():
     D = muda.deformers.TimeStretch(rate=2.0)
 
     muda.Pipeline([('stretch1', D),
                    ('stretch2', 'not a basetransformer')])
+
+
+@pytest.mark.xfail(raises=TypeError)
+def test_bad_union_object():
+    D = muda.deformers.TimeStretch(rate=2.0)
+
+    muda.Union([('stretch1', D),
+                ('stretch2', 'not a basetransformer')])
 
 
 @pytest.mark.xfail(raises=NotImplementedError)
