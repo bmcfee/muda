@@ -14,11 +14,12 @@ from .version import version
 
 __all__ = ['load_jam_audio', 'save', 'jam_pack', 'serialize', 'deserialize']
 
+
 def jam_pack(jam, **kwargs):
     '''Pack data into a jams sandbox.
 
     If not already present, this creates a `muda` field within `jam.sandbox`,
-    along with `history`, `state`, and version arrays which are populated by 
+    along with `history`, `state`, and version arrays which are populated by
     deformation objects.
 
     Any additional fields can be added to the `muda` sandbox by supplying
@@ -47,12 +48,17 @@ def jam_pack(jam, **kwargs):
     '''
 
     if not hasattr(jam.sandbox, 'muda'):
+        # If there's no mudabox, create one
         jam.sandbox.muda = jams.Sandbox(history=[],
                                         state=[],
                                         version=dict(muda=version,
                                                      librosa=librosa.__version__,
                                                      jams=jams.__version__,
                                                      pysoundfile=psf.__version__))
+
+    elif not isinstance(jam.sandbox.muda, jams.Sandbox):
+        # If there is a muda entry, but it's not a sandbox, coerce it
+        jam.sandbox.muda = jams.Sandbox(**jam.sandbox.muda)
 
     jam.sandbox.muda.update(**kwargs)
 
