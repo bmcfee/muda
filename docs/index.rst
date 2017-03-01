@@ -1,3 +1,5 @@
+.. _muda:
+
 Musical Data Augmentation
 =========================
 
@@ -11,6 +13,7 @@ perturbations to annotated music data for the purpose of fitting statistical mod
     16th International Society for Music Information Retrival conference (ISMIR).
     2015.
 
+.. _introduction:
 
 Introduction
 ------------
@@ -50,10 +53,12 @@ contain (deformed) audio and store the deformation history objects.
     >>> # Ready to go!
 
     >>> # Loading audio form disk with an existing jams
+    >>> j_orig = jams.load('existing_jams_file.jams')
     >>> j_orig = muda.load_jam_audio(existing_jams, 'orig.ogg')
     >>> # Ready to go!
 
     >>> # Loading in-memory audio with an existing jams
+    >>> j_orig = jams.load('existing_jams_file.jams')
     >>> j_orig = muda.jam_pack(existing_jams, _audio=dict(y=y, sr=sr))
     >>> # Ready to go!
 
@@ -67,7 +72,7 @@ an input.  Each deformed example is then saved to disk.
 .. code-block:: python
 
     >>> pitch = muda.deformers.LinearPitchShift(n_samples=5, lower=-1, upper=1)
-    >>> for i, jam_out in pitch.transform(j_orig):
+    >>> for i, jam_out in enumerate(pitch.transform(j_orig)):
             muda.save('output_{:02d}.ogg'.format(i),
     ...               'output_{:02d}.jams'.format(i),
     ...               jam_out)

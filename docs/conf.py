@@ -57,12 +57,17 @@ project = u'muda'
 copyright = u'2015, Brian McFee'
 
 # Mock the dependencies
-from mock import MagicMock
+import six
+
+if six.PY3:
+    from unittest.mock import MagicMock
+else:
+    from mock import Mock as MagicMock
 
 class Mock(MagicMock):
     @classmethod
     def __getattr__(cls, name):
-            return Mock()
+        return Mock()
 
 
 MOCK_MODULES = ['librosa', 'librosa.util', 'librosa.output',
