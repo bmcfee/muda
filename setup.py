@@ -35,7 +35,6 @@ setup(
         'pandas',
         'jams>=0.2',
         'pysoundfile>=0.8',
-        'sklearn',
         'six',
         'jsonpickle',
     ],

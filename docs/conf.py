@@ -67,7 +67,6 @@ class Mock(MagicMock):
 
 MOCK_MODULES = ['librosa', 'librosa.util', 'librosa.output',
                 'jsonpickle', 'soundfile', 'jams',
-                'sklearn', 'sklearn.base',
                 'numpy', 'numpy.random',
                 'pyrubberband', 'pandas']
 
