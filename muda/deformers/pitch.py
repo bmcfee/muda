@@ -120,7 +120,7 @@ class PitchShift(AbstractPitchShift):
 
     Attributes
     ----------
-    n_semitones : float
+    n_semitones : float or list of float
         The number of semitones to transpose the signal.
         Can be positive, negative, integral, or fractional.
 
@@ -137,12 +137,13 @@ class PitchShift(AbstractPitchShift):
 
     def __init__(self, n_semitones=1):
         AbstractPitchShift.__init__(self)
-        self.n_semitones = float(n_semitones)
+        self.n_semitones = np.atleast_1d(n_semitones).flatten()
 
     def states(self, jam):
         for state in AbstractPitchShift.states(self, jam):
-            state['n_semitones'] = self.n_semitones
-            yield state
+            for semitones in self.n_semitones:
+                state['n_semitones'] = semitones
+                yield state
 
 
 class RandomPitchShift(AbstractPitchShift):

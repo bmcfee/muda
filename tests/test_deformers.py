@@ -74,7 +74,7 @@ def __test_deformer_history(deformer, history):
     d_trans['__class__'] == params['__class__'].__name__
 
 
-@pytest.mark.parametrize('rate', [0.5, 1.0, 2.0,
+@pytest.mark.parametrize('rate', [0.5, 1.0, 2.0, [1.0, 1.5],
                                   pytest.mark.xfail(-1, raises=ValueError),
                                   pytest.mark.xfail(-0.5, raises=ValueError),
                                   pytest.mark.xfail(0.0, raises=ValueError)])
@@ -94,7 +94,10 @@ def test_timestretch(rate, jam_fixture):
 
         d_state = jam_new.sandbox.muda.history[-1]['state']
         d_rate = d_state['rate']
-        ap_(rate, d_rate)
+        if isinstance(rate, list):
+            assert d_rate in rate
+        else:
+            assert d_rate == rate
 
         __test_time(jam_orig, jam_new, d_rate)
 
@@ -256,7 +259,7 @@ def __test_pitch(jam_orig, jam_new, n_semitones, tuning):
 
 
 @pytest.mark.parametrize('n_semitones',
-                         [-2, -1, -0.5, -0.25, 0, 0.25, 1.0, 1.5])
+                         [-2, -1, -0.5, -0.25, 0, 0.25, 1.0, 1.5, [-1, 1]])
 def test_pitchshift(n_semitones, jam_fixture):
     np.random.seed(0)
     D = muda.deformers.PitchShift(n_semitones=n_semitones)
@@ -274,7 +277,11 @@ def test_pitchshift(n_semitones, jam_fixture):
         d_state = jam_new.sandbox.muda.history[-1]['state']
         d_tones = d_state['n_semitones']
         tuning = d_state['tuning']
-        ap_(n_semitones, d_tones)
+        if isinstance(n_semitones, list):
+            assert d_tones in n_semitones
+        else:
+            assert d_tones == n_semitones
+
         __test_pitch(jam_orig, jam_new, d_tones, tuning)
 
 

@@ -79,7 +79,7 @@ class TimeStretch(AbstractTimeStretch):
 
     Attributes
     ----------
-    rate : float > 0
+    rate : float or list of floats, strictly positive
         The rate at which to speedup the audio.
         - rate > 1 speeds up,
         - rate < 1 slows down.
@@ -98,12 +98,13 @@ class TimeStretch(AbstractTimeStretch):
         '''Time stretching'''
         AbstractTimeStretch.__init__(self)
 
-        self.rate = float(rate)
-        if rate <= 0:
+        self.rate = np.atleast_1d(rate).flatten()
+        if np.any(self.rate <= 0):
             raise ValueError('rate parameter must be strictly positive.')
 
     def states(self, jam):
-        yield dict(rate=self.rate)
+        for rate in self.rate:
+            yield dict(rate=rate)
 
 
 class LogspaceTimeStretch(AbstractTimeStretch):
@@ -126,7 +127,7 @@ class LogspaceTimeStretch(AbstractTimeStretch):
     n_samples : int > 0
         Number of deformations to generate
 
-    lower : float 
+    lower : float
     upper : float > lower
         Minimum and maximum bounds on the stretch parameters
 
@@ -156,6 +157,7 @@ class LogspaceTimeStretch(AbstractTimeStretch):
 
         for rate in rates:
             yield dict(rate=rate)
+
 
 class RandomTimeStretch(AbstractTimeStretch):
     '''Random time stretching
