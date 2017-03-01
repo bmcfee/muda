@@ -11,6 +11,7 @@ import librosa
 
 import tempfile
 import os
+import six
 
 from nose.tools import eq_, raises
 
@@ -102,3 +103,14 @@ def test_serialize_pipeline():
     eq_(P_orig.get_params(), P_new.get_params())
 
     assert P_orig is not P_new
+
+
+def test_reload_jampack():
+
+    # This test is to address #42, where mudaboxes reload as dict
+    # instead of Sandbox
+    jam = muda.load_jam_audio('data/fixture.jams', 'data/fixture.wav')
+
+    jam2 = muda.load_jam_audio(six.StringIO(jam.dumps()), 'data/fixture.wav')
+    assert isinstance(jam.sandbox.muda, jams.Sandbox)
+    assert isinstance(jam2.sandbox.muda, jams.Sandbox)
