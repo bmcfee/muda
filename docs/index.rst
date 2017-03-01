@@ -161,6 +161,7 @@ API Reference
 .. toctree::
     :maxdepth: 3
 
+    muda
     core
     deformers
     changes
