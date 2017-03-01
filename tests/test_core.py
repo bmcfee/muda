@@ -73,17 +73,6 @@ def test_load_jam_audio(jam_loader, audio_file):
     assert jam.file_metadata.duration == duration
 
 
-    # Add an empty jams test for missing duration
-#    yield __test, jams.JAMS(), 'tests/data/fixture.wav'
-
-#    yield __test, 'tests/data/fixture.jams', 'tests/data/fixture.wav'
-
-#    yield __test, jams.load('tests/data/fixture.jams'), 'tests/data/fixture.wav'
-
-#    with open('tests/data/fixture.jams', 'r') as fdesc:
-#        yield __test, fdesc, 'tests/data/fixture.wav'
-
-
 def test_save(jam_in, audio_file):
 
     jam = muda.load_jam_audio(jam_in, audio_file)

@@ -1,18 +1,18 @@
 #!/usr/bin/env python
 
-from __future__ import print_function
-
-import librosa
-import numpy as np
-import jams
-
+from copy import deepcopy
 import re
 import six
 
-import muda
-from copy import deepcopy
+import numpy as np
 
-from nose.tools import eq_, raises
+import jams
+import librosa
+
+import muda
+
+import pytest
+
 
 def ap_(a, b, msg=None, rtol=1e-5, atol=1e-5):
     """Shorthand for 'assert np.allclose(a, b, rtol, atol), "%r != %r" % (a, b)
@@ -21,15 +21,21 @@ def ap_(a, b, msg=None, rtol=1e-5, atol=1e-5):
         raise AssertionError(msg or "{} != {}".format(a, b))
 
 
-jam_fixture = muda.load_jam_audio('tests/data/fixture.jams', 'tests/data/fixture.wav')
+@pytest.fixture(scope='module')
+def jam_fixture():
+    return muda.load_jam_audio('tests/data/fixture.jams',
+                               'tests/data/fixture.wav')
 
 
-@raises(RuntimeError)
-def test_raw():
+@pytest.fixture(scope='module')
+def jam_raw():
+    return jams.load('tests/data/fixture.jams')
 
-    jam_raw = jams.load('tests/data/fixture.jams')
+
+@pytest.mark.xfail(raises=RuntimeError)
+def test_raw(jam_raw):
+
     D = muda.deformers.TimeStretch(rate=2.0)
-
     six.next(D.transform(jam_raw))
 
 
@@ -64,149 +70,130 @@ def __test_deformer_history(deformer, history):
     d_trans = history['transformer']
     params = deformer.get_params()
 
-    eq_(d_trans['params'], params['params'])
-    eq_(d_trans['__class__'], params['__class__'].__name__)
+    d_trans['params'] == params['params']
+    d_trans['__class__'] == params['__class__'].__name__
 
 
-def test_timestretch():
+@pytest.mark.parametrize('rate', [0.5, 1.0, 2.0,
+                                  pytest.mark.xfail(-1, raises=ValueError),
+                                  pytest.mark.xfail(-0.5, raises=ValueError),
+                                  pytest.mark.xfail(0.0, raises=ValueError)])
+def test_timestretch(rate, jam_fixture):
 
-    def __test(rate, jam):
-        D = muda.deformers.TimeStretch(rate=rate)
+    D = muda.deformers.TimeStretch(rate=rate)
 
-        jam_orig = deepcopy(jam)
+    jam_orig = deepcopy(jam_fixture)
 
-        for jam_new in D.transform(jam):
-            # Verify that the original jam reference hasn't changed
-            assert jam_new is not jam
-            __test_time(jam_orig, jam, 1.0)
+    for jam_new in D.transform(jam_fixture):
+        # Verify that the original jam reference hasn't changed
+        assert jam_new is not jam_fixture
+        __test_time(jam_orig, jam_fixture, 1.0)
 
-            # Verify that the state and history objects are intact
-            __test_deformer_history(D, jam_new.sandbox.muda.history[-1])
+        # Verify that the state and history objects are intact
+        __test_deformer_history(D, jam_new.sandbox.muda.history[-1])
 
-            d_state = jam_new.sandbox.muda.history[-1]['state']
-            d_rate = d_state['rate']
-            ap_(rate, d_rate)
+        d_state = jam_new.sandbox.muda.history[-1]['state']
+        d_rate = d_state['rate']
+        ap_(rate, d_rate)
 
-            __test_time(jam_orig, jam_new, d_rate)
-
-
-    for rate in [0.5, 1.0, 2.0]:
-        yield __test, rate, jam_fixture
-
-    for bad_rate in [-1, -0.5, 0.0]:
-        yield raises(ValueError)(__test), bad_rate, jam_fixture
+        __test_time(jam_orig, jam_new, d_rate)
 
 
-def test_log_timestretch():
-
-    def __test(n, lower, upper, jam):
-        D = muda.deformers.LogspaceTimeStretch(n_samples=n, lower=lower, upper=upper)
-
-        jam_orig = deepcopy(jam)
-
-        n_samples = 0
-        for jam_new in D.transform(jam):
-            # Verify that the original jam reference hasn't changed
-            assert jam_new is not jam
-            __test_time(jam_orig, jam, 1.0)
-
-            # Verify that the state and history objects are intact
-            __test_deformer_history(D, jam_new.sandbox.muda.history[-1])
-
-            d_state = jam_new.sandbox.muda.history[-1]['state']
-            d_rate = d_state['rate']
-            assert 2.0**lower <= d_rate <= 2.0**upper
-
-            __test_time(jam_orig, jam_new, d_rate)
-            n_samples += 1
-
-        eq_(n, n_samples)
+@pytest.fixture(params=[1, 3, 5,
+                        pytest.mark.xfail(-3, raises=ValueError),
+                        pytest.mark.xfail(0, raises=ValueError)])
+def n_samples(request):
+    return request.param
 
 
-    for n in [1, 3, 5]:
-        for lower in [-1, -0.5, 0.0]:
-            for upper in [0.5, 1.0]:
-                yield __test, n, lower, upper, jam_fixture
+@pytest.mark.parametrize('lower, upper',
+                         [(-1, 0.5), (0.0, 1.0),
+                          pytest.mark.xfail((-1, -3), raises=ValueError),
+                          pytest.mark.xfail((2, 1), raises=ValueError)])
+def test_log_timestretch(n_samples, lower, upper, jam_fixture):
 
-    for bad_samples in [-3, 0]:
-        yield raises(ValueError)(__test), bad_samples, -1, 1, jam_fixture
+    D = muda.deformers.LogspaceTimeStretch(n_samples=n_samples,
+                                           lower=lower,
+                                           upper=upper)
 
-    for bad_int in [(-1, -3), (2, 1)]:
-        yield raises(ValueError)(__test), 3, bad_int[0], bad_int[1], jam_fixture
+    jam_orig = deepcopy(jam_fixture)
 
+    n_out = 0
+    for jam_new in D.transform(jam_fixture):
+        # Verify that the original jam reference hasn't changed
+        assert jam_new is not jam_fixture
+        __test_time(jam_orig, jam_fixture, 1.0)
 
-def test_random_timestretch():
+        # Verify that the state and history objects are intact
+        __test_deformer_history(D, jam_new.sandbox.muda.history[-1])
 
-    def __test(n_samples, jam):
-        np.random.seed(0)
-        D = muda.deformers.RandomTimeStretch(n_samples=n_samples)
+        d_state = jam_new.sandbox.muda.history[-1]['state']
+        d_rate = d_state['rate']
+        assert 2.0**lower <= d_rate <= 2.0**upper
 
-        jam_orig = deepcopy(jam)
+        __test_time(jam_orig, jam_new, d_rate)
+        n_out += 1
 
-        for jam_new in D.transform(jam):
-            # Verify that the original jam reference hasn't changed
-            assert jam_new is not jam
-            __test_time(jam_orig, jam, 1.0)
-
-            # Verify that the state and history objects are intact
-            __test_deformer_history(D, jam_new.sandbox.muda.history[-1])
-
-            d_state = jam_new.sandbox.muda.history[-1]['state']
-            d_rate = d_state['rate']
-
-            __test_time(jam_orig, jam_new, d_rate)
-
-    @raises(ValueError)
-    def __test_negative_scale():
-        muda.deformers.RandomTimeStretch(scale=-1)
-
-    for n in [1, 3, 5]:
-        yield __test, n, jam_fixture
-
-    for bad_n in [-1, 0]:
-        yield raises(ValueError)(__test), bad_n, jam_fixture
-
-    yield __test_negative_scale
+    assert n_samples == n_out
 
 
-def test_bypass():
+@pytest.mark.parametrize('scale',
+                         [0.1,
+                          pytest.mark.xfail(0, raises=ValueError),
+                          pytest.mark.xfail(-1, raises=ValueError)])
+def test_random_timestretch(n_samples, scale, jam_fixture):
 
-    def __test(rate, jam):
-        _D = muda.deformers.TimeStretch(rate=rate)
-        D = muda.deformers.Bypass(transformer=_D)
+    np.random.seed(0)
+    D = muda.deformers.RandomTimeStretch(n_samples=n_samples, scale=scale)
 
-        jam_orig = deepcopy(jam)
+    jam_orig = deepcopy(jam_fixture)
 
-        generator = D.transform(jam)
-        jam_new = six.next(generator)
-        assert jam_new is jam
-        __test_time(jam_orig, jam, 1.0)
+    n_out = 0
+    for jam_new in D.transform(jam_fixture):
+        # Verify that the original jam reference hasn't changed
+        assert jam_new is not jam_fixture
+        __test_time(jam_orig, jam_fixture, 1.0)
 
-        for jam_new in generator:
-            # Verify that the original jam reference hasn't changed
-            assert jam_new is not jam
-            __test_time(jam_orig, jam, 1.0)
+        # Verify that the state and history objects are intact
+        __test_deformer_history(D, jam_new.sandbox.muda.history[-1])
 
-            # Verify that the state and history objects are intact
-            __test_deformer_history(_D, jam_new.sandbox.muda.history[-1])
+        d_state = jam_new.sandbox.muda.history[-1]['state']
+        d_rate = d_state['rate']
 
-            d_state = jam_new.sandbox.muda.history[-1]['state']
-            d_rate = d_state['rate']
-            ap_(rate, d_rate)
+        __test_time(jam_orig, jam_new, d_rate)
+        n_out += 1
 
-            __test_time(jam_orig, jam_new, d_rate)
+    assert n_samples == n_out
 
-    @raises(TypeError)
-    def bad_test():
-        D = muda.deformers.Bypass(None)
 
-    for rate in [0.5, 1.0, 2.0]:
-        yield __test, rate, jam_fixture
+@pytest.fixture(scope='module',
+                params=[0.5,
+                        pytest.mark.xfail(None, raises=TypeError)])
+def D_simple(request):
+    if request.param is None:
+        return None
+    else:
+        return muda.deformers.TimeStretch(rate=request.param)
 
-    for bad_rate in [-1, -0.5, 0.0]:
-        yield raises(ValueError)(__test), bad_rate, jam_fixture
 
-    yield bad_test
+def test_bypass(D_simple, jam_fixture):
+
+    D = muda.deformers.Bypass(transformer=D_simple)
+
+    jam_orig = deepcopy(jam_fixture)
+
+    generator = D.transform(jam_fixture)
+    jam_new = six.next(generator)
+    assert jam_new is jam_fixture
+    __test_time(jam_orig, jam_fixture, 1.0)
+
+    for jam_new in generator:
+        # Verify that the original jam reference hasn't changed
+        assert jam_new is not jam_fixture
+        __test_time(jam_orig, jam_fixture, 1.0)
+
+        # Verify that the state and history objects are intact
+        __test_deformer_history(D_simple, jam_new.sandbox.muda.history[-1])
 
 
 def pstrip(x):
@@ -221,7 +208,7 @@ def __test_note(ann_orig, ann_new, n):
 
     # Get the value strings
     v_orig = np.asarray([pstrip(_) for _ in ann_orig.data.value])
-    v_new  = np.asarray([pstrip(_) for _ in ann_new.data.value])
+    v_new = np.asarray([pstrip(_) for _ in ann_new.data.value])
 
     v_orig = np.mod(np.round(np.mod(v_orig + n, 12)), 12)
     v_new = np.mod(np.round(np.mod(v_new, 12)), 12)
@@ -231,7 +218,7 @@ def __test_note(ann_orig, ann_new, n):
 def __test_tonic(ann_orig, ann_new, n):
 
     v_orig = np.asarray([pstrip(_['tonic']) for _ in ann_orig.data.value])
-    v_new  = np.asarray([pstrip(_['tonic']) for _ in ann_new.data.value])
+    v_new = np.asarray([pstrip(_['tonic']) for _ in ann_new.data.value])
 
     v_orig = np.mod(np.round(np.mod(v_orig + n, 12)), 12)
     v_new = np.mod(np.round(np.mod(v_new, 12)), 12)
@@ -269,38 +256,41 @@ def __test_pitch(jam_orig, jam_new, n_semitones, tuning):
             __test_midi(ann_orig, ann_new, n_semitones)
 
 
-def test_pitchshift():
-    def __test(n_semitones, jam):
-        np.random.seed(0)
-        D = muda.deformers.PitchShift(n_semitones=n_semitones)
+@pytest.mark.parametrize('n_semitones',
+                         [-2, -1, -0.5, -0.25, 0, 0.25, 1.0, 1.5])
+def test_pitchshift(n_semitones, jam_fixture):
+    np.random.seed(0)
+    D = muda.deformers.PitchShift(n_semitones=n_semitones)
 
-        jam_orig = deepcopy(jam)
+    jam_orig = deepcopy(jam_fixture)
 
-        for jam_new in D.transform(jam):
-            # Verify that the original jam reference hasn't changed
-            assert jam_new is not jam
-            __test_pitch(jam_orig, jam, 0.0, 0)
+    for jam_new in D.transform(jam_fixture):
+        # Verify that the original jam reference hasn't changed
+        assert jam_new is not jam_fixture
+        __test_pitch(jam_orig, jam_fixture, 0.0, 0)
 
-            # Verify that the state and history objects are intact
-            __test_deformer_history(D, jam_new.sandbox.muda.history[-1])
+        # Verify that the state and history objects are intact
+        __test_deformer_history(D, jam_new.sandbox.muda.history[-1])
 
-            d_state = jam_new.sandbox.muda.history[-1]['state']
-            d_tones = d_state['n_semitones']
-            tuning = d_state['tuning']
-            ap_(n_semitones, d_tones)
-            __test_pitch(jam_orig, jam_new, d_tones, tuning)
-
-    for n in [-2, -1, -0.5, -0.25, 0, 0.25, 1.0, 1.5]:
-        yield __test, n, jam_fixture
+        d_state = jam_new.sandbox.muda.history[-1]['state']
+        d_tones = d_state['n_semitones']
+        tuning = d_state['tuning']
+        ap_(n_semitones, d_tones)
+        __test_pitch(jam_orig, jam_new, d_tones, tuning)
 
 
-def test_random_pitchshift():
+@pytest.mark.parametrize('sigma',
+                         [0.5,
+                          pytest.mark.xfail(-1, raises=ValueError),
+                          pytest.mark.xfail(0, raises=ValueError)])
+def test_random_pitchshift(n_samples, sigma, jam_fixture):
 
     def __test(n_samples, jam):
-        D = muda.deformers.RandomPitchShift(n_samples=n_samples)
+        D = muda.deformers.RandomPitchShift(n_samples=n_samples, sigma=sigma)
 
         jam_orig = deepcopy(jam)
 
+        n_out = 0
         for jam_new in D.transform(jam):
             # Verify that the original jam reference hasn't changed
             assert jam_new is not jam
@@ -313,129 +303,108 @@ def test_random_pitchshift():
             d_tones = d_state['n_semitones']
             tuning = d_state['tuning']
             __test_pitch(jam_orig, jam_new, d_tones, tuning)
+            n_out += 1
 
-    @raises(ValueError)
-    def __test_negative_scale(sigma):
-        muda.deformers.RandomPitchShift(sigma=sigma)
-
-    for n in [1, 3, 5]:
-        yield __test, n, jam_fixture
-
-    for bad_n in [-1, 0]:
-        yield raises(ValueError)(__test), bad_n, jam_fixture
-
-    for bad_sigma in [-1, 0]:
-        yield __test_negative_scale, bad_sigma
+        assert n_out == n_samples
 
 
-def test_linear_pitchshift():
+@pytest.mark.parametrize('lower, upper',
+                         [(-3, 1), (0.0, 3.0),
+                          pytest.mark.xfail((-1, -3), raises=ValueError),
+                          pytest.mark.xfail((2, 1), raises=ValueError)])
+def test_linear_pitchshift(n_samples, lower, upper, jam_fixture):
+    D = muda.deformers.LinearPitchShift(n_samples=n_samples,
+                                        lower=lower,
+                                        upper=upper)
 
-    def __test(n, lower, upper, jam):
-        D = muda.deformers.LinearPitchShift(n_samples=n, lower=lower, upper=upper)
+    jam_orig = deepcopy(jam_fixture)
 
-        jam_orig = deepcopy(jam)
+    n_out = 0
+    for jam_new in D.transform(jam_fixture):
+        # Verify that the original jam reference hasn't changed
+        assert jam_new is not jam_fixture
+        __test_pitch(jam_orig, jam_fixture, 0.0, 0.0)
 
-        n_samples = 0
-        for jam_new in D.transform(jam):
-            # Verify that the original jam reference hasn't changed
-            assert jam_new is not jam
-            __test_pitch(jam_orig, jam, 0.0, 0.0)
+        # Verify that the state and history objects are intact
+        __test_deformer_history(D, jam_new.sandbox.muda.history[-1])
 
-            # Verify that the state and history objects are intact
-            __test_deformer_history(D, jam_new.sandbox.muda.history[-1])
+        d_state = jam_new.sandbox.muda.history[-1]['state']
+        d_tones = d_state['n_semitones']
+        tuning = d_state['tuning']
+        assert lower <= d_tones <= 2.0**upper
 
-            d_state = jam_new.sandbox.muda.history[-1]['state']
-            d_tones = d_state['n_semitones']
-            tuning = d_state['tuning']
-            assert lower <= d_tones <= 2.0**upper
+        __test_pitch(jam_orig, jam_new, d_tones, tuning)
+        n_out += 1
 
-            __test_pitch(jam_orig, jam_new, d_tones, tuning)
-            n_samples += 1
-
-        eq_(n, n_samples)
-
-
-    for n in [1, 3, 5]:
-        for lower in [-3, -1, 0.0]:
-            for upper in [1, 3]:
-                yield __test, n, lower, upper, jam_fixture
-
-    for bad_samples in [-3, 0]:
-        yield raises(ValueError)(__test), bad_samples, -1, 1, jam_fixture
-
-    for bad_int in [(-1, -3), (2, 1)]:
-        yield raises(ValueError)(__test), 3, bad_int[0], bad_int[1], jam_fixture
+    assert n_out == n_samples
 
 
 def __test_effect(jam_orig, jam_new):
-
-
     for ann_orig, ann_new in zip(jam_orig.annotations, jam_new.annotations):
-        eq_(ann_orig, ann_new)
+        ann_orig == ann_new
 
 
-def test_drc():
-
-    def __test(preset, jam):
-
-        D = muda.deformers.DynamicRangeCompression(preset=preset)
-
-        jam_orig = deepcopy(jam)
-
-        for jam_new in D.transform(jam_orig):
-
-            assert jam_new is not jam
-            __test_effect(jam_orig, jam)
-
-            assert not np.allclose(jam_orig.sandbox.muda['_audio']['y'],
-                                   jam_new.sandbox.muda['_audio']['y'])
-
-            __test_effect(jam_orig, jam_new)
-
-    for preset in muda.deformers.sox.PRESETS:
-        yield __test, preset, jam_fixture
-
-    yield __test, muda.deformers.sox.PRESETS.keys(), jam_fixture
+@pytest.fixture(params=[p for p in muda.deformers.sox.PRESETS] +
+                list(muda.deformers.sox.PRESETS.keys()))
+def preset(request):
+    return request.param
 
 
-def test_background():
+def test_drc(preset, jam_fixture):
 
-    def __test(noise_sample, n_samples, weight_min, weight_max, jam):
+    D = muda.deformers.DynamicRangeCompression(preset=preset)
 
-        D = muda.deformers.BackgroundNoise(files=noise_sample,
-                                           n_samples=n_samples,
-                                           weight_min=weight_min,
-                                           weight_max=weight_max)
+    jam_orig = deepcopy(jam_fixture)
 
-        jam_orig = deepcopy(jam)
+    for jam_new in D.transform(jam_orig):
 
-        for jam_new in D.transform(jam_orig):
+        assert jam_new is not jam_fixture
+        __test_effect(jam_orig, jam_fixture)
 
-            assert jam_new is not jam
-            __test_effect(jam_orig, jam)
+        assert not np.allclose(jam_orig.sandbox.muda['_audio']['y'],
+                               jam_new.sandbox.muda['_audio']['y'])
 
-            assert not np.allclose(jam_orig.sandbox.muda['_audio']['y'],
-                                   jam_new.sandbox.muda['_audio']['y'])
-
-            __test_effect(jam_orig, jam_new)
-
-    noise = 'tests/data/noise_sample.ogg'
-
-    for weight_min in [0.01, 0.1, 0.5]:
-        for weight_max in [0.6, 0.8, 0.99]:
-            yield __test, noise, 3, weight_min, weight_max, jam_fixture
-            yield __test, [noise], 3, weight_min, weight_max, jam_fixture
-
-    yield raises(RuntimeError)(__test), 'nonexistant_file.ogg', 3, weight_min, weight_max, jam_fixture
-
-    for bad_n in [-1, 0]:
-        yield raises(ValueError)(__test), noise, bad_n, 0.25, 0.75, jam_fixture
-
-    for bad_int in [(0, 0.5), (0.5, 1), (-1, 0.5), (0.5, 1.5), (0.75, 0.25)]:
-        yield raises(ValueError)(__test), noise, 1, bad_int[0], bad_int[1], jam_fixture
+        __test_effect(jam_orig, jam_new)
 
 
-def test_pipeline():
+@pytest.mark.parametrize('noise', ['tests/data/noise_sample.ogg',
+                                   ['tests/data/noise_sample.ogg']])
+@pytest.mark.parametrize('weight_min, weight_max',
+                         [(0.01, 0.6), (0.1, 0.8), (0.5, 0.99),
+                          pytest.mark.xfail((0.0, 0.5), raises=ValueError),
+                          pytest.mark.xfail((-1, 0.5), raises=ValueError),
+                          pytest.mark.xfail((0.5, 1.5), raises=ValueError),
+                          pytest.mark.xfail((0.75, 0.25), raises=ValueError)])
+def test_background(noise, n_samples, weight_min, weight_max, jam_fixture):
+
+    D = muda.deformers.BackgroundNoise(files=noise,
+                                       n_samples=n_samples,
+                                       weight_min=weight_min,
+                                       weight_max=weight_max)
+
+    jam_orig = deepcopy(jam_fixture)
+
+    n_out = 0
+    for jam_new in D.transform(jam_orig):
+
+        assert jam_new is not jam_fixture
+        __test_effect(jam_orig, jam_fixture)
+
+        assert not np.allclose(jam_orig.sandbox.muda['_audio']['y'],
+                               jam_new.sandbox.muda['_audio']['y'])
+
+        __test_effect(jam_orig, jam_new)
+        n_out += 1
+
+    assert n_out == n_samples
+
+
+@pytest.mark.xfail(raises=RuntimeError)
+def test_background_no_file():
+    muda.deformers.BackgroundNoise(files='does-not-exist.ogg', n_samples=1)
+
+
+def test_pipeline(jam_fixture):
     D1 = muda.deformers.TimeStretch(rate=2.0)
     D2 = muda.deformers.TimeStretch(rate=1.5)
 
@@ -455,24 +424,23 @@ def test_pipeline():
         __test_time(jam_orig, jam_new, D1.rate * D2.rate)
 
 
-@raises(ValueError)
+@pytest.mark.xfail(raises=ValueError)
 def test_bad_pipeline_unique():
     D1 = muda.deformers.TimeStretch(rate=2.0)
     D2 = muda.deformers.TimeStretch(rate=1.5)
 
-    P = muda.Pipeline([('stretch', D1),
-                       ('stretch', D2)])
+    muda.Pipeline([('stretch', D1), ('stretch', D2)])
 
 
-@raises(TypeError)
+@pytest.mark.xfail(raises=TypeError)
 def test_bad_pipeline_object():
     D = muda.deformers.TimeStretch(rate=2.0)
 
-    P = muda.Pipeline([('stretch1', D),
-                       ('stretch2', 'not a basetransformer')])
+    muda.Pipeline([('stretch1', D),
+                   ('stretch2', 'not a basetransformer')])
 
 
-@raises(NotImplementedError)
+@pytest.mark.xfail(raises=NotImplementedError)
 def test_base_transformer():
 
     D = muda.BaseTransformer()
