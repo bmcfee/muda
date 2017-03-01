@@ -45,20 +45,20 @@ def test_load_jam_audio():
             librosa.get_duration(**jam.sandbox.muda._audio))
 
     # Add an empty jams test for missing duration
-    yield __test, jams.JAMS(), 'data/fixture.wav'
+    yield __test, jams.JAMS(), 'tests/data/fixture.wav'
 
-    yield __test, 'data/fixture.jams', 'data/fixture.wav'
+    yield __test, 'tests/data/fixture.jams', 'tests/data/fixture.wav'
 
-    yield __test, jams.load('data/fixture.jams'), 'data/fixture.wav'
+    yield __test, jams.load('tests/data/fixture.jams'), 'tests/data/fixture.wav'
 
-    with open('data/fixture.jams', 'r') as fdesc:
-        yield __test, fdesc, 'data/fixture.wav'
+    with open('tests/data/fixture.jams', 'r') as fdesc:
+        yield __test, fdesc, 'tests/data/fixture.wav'
 
 
 def test_save():
 
-    jam = muda.load_jam_audio('data/fixture.jams',
-                              'data/fixture.wav')
+    jam = muda.load_jam_audio('tests/data/fixture.jams',
+                              'tests/data/fixture.wav')
 
     _, jamfile = tempfile.mkstemp(suffix='.jams')
     _, audfile = tempfile.mkstemp(suffix='.wav')
@@ -109,8 +109,8 @@ def test_reload_jampack():
 
     # This test is to address #42, where mudaboxes reload as dict
     # instead of Sandbox
-    jam = muda.load_jam_audio('data/fixture.jams', 'data/fixture.wav')
+    jam = muda.load_jam_audio('tests/data/fixture.jams', 'tests/data/fixture.wav')
 
-    jam2 = muda.load_jam_audio(six.StringIO(jam.dumps()), 'data/fixture.wav')
+    jam2 = muda.load_jam_audio(six.StringIO(jam.dumps()), 'tests/data/fixture.wav')
     assert isinstance(jam.sandbox.muda, jams.Sandbox)
     assert isinstance(jam2.sandbox.muda, jams.Sandbox)

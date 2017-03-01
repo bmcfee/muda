@@ -21,13 +21,13 @@ def ap_(a, b, msg=None, rtol=1e-5, atol=1e-5):
         raise AssertionError(msg or "{} != {}".format(a, b))
 
 
-jam_fixture = muda.load_jam_audio('data/fixture.jams', 'data/fixture.wav')
+jam_fixture = muda.load_jam_audio('tests/data/fixture.jams', 'tests/data/fixture.wav')
 
 
 @raises(RuntimeError)
 def test_raw():
 
-    jam_raw = jams.load('data/fixture.jams')
+    jam_raw = jams.load('tests/data/fixture.jams')
     D = muda.deformers.TimeStretch(rate=2.0)
 
     six.next(D.transform(jam_raw))
@@ -293,6 +293,7 @@ def test_pitchshift():
     for n in [-2, -1, -0.5, -0.25, 0, 0.25, 1.0, 1.5]:
         yield __test, n, jam_fixture
 
+
 def test_random_pitchshift():
 
     def __test(n_samples, jam):
@@ -322,7 +323,7 @@ def test_random_pitchshift():
 
     for bad_n in [-1, 0]:
         yield raises(ValueError)(__test), bad_n, jam_fixture
-    
+
     for bad_sigma in [-1, 0]:
         yield __test_negative_scale, bad_sigma
 
@@ -418,7 +419,7 @@ def test_background():
 
             __test_effect(jam_orig, jam_new)
 
-    noise = 'data/noise_sample.ogg'
+    noise = 'tests/data/noise_sample.ogg'
 
     for weight_min in [0.01, 0.1, 0.5]:
         for weight_max in [0.6, 0.8, 0.99]:
