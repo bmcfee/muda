@@ -303,7 +303,7 @@ class Union(object):
                                            offset=len(class_name),),)
 
     def __serial_transform(self, jam, steps):
-        '''A serial transformation pipeline'''
+        '''A serial transformation union'''
         # This uses the round-robin itertools recipe
 
         if six.PY2:
@@ -314,9 +314,6 @@ class Union(object):
         pending = len(steps)
         nexts = itertools.cycle(getattr(iter(D.transform(jam)), attr)
                                 for (name, D) in steps)
-
-        if not pending:
-            yield jam
 
         while pending:
             try:
