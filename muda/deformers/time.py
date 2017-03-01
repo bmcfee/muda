@@ -101,6 +101,7 @@ class TimeStretch(AbstractTimeStretch):
         self.rate = np.atleast_1d(rate).flatten()
         if np.any(self.rate <= 0):
             raise ValueError('rate parameter must be strictly positive.')
+        self.rate = self.rate.tolist()
 
     def states(self, jam):
         for rate in self.rate:

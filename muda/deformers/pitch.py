@@ -137,7 +137,7 @@ class PitchShift(AbstractPitchShift):
 
     def __init__(self, n_semitones=1):
         AbstractPitchShift.__init__(self)
-        self.n_semitones = np.atleast_1d(n_semitones).flatten()
+        self.n_semitones = np.atleast_1d(n_semitones).flatten().tolist()
 
     def states(self, jam):
         for state in AbstractPitchShift.states(self, jam):

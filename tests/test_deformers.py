@@ -426,7 +426,7 @@ def test_pipeline(jam_fixture):
         __test_deformer_history(D1, jam_new.sandbox.muda.history[0])
         __test_deformer_history(D2, jam_new.sandbox.muda.history[-1])
 
-        __test_time(jam_orig, jam_new, D1.rate * D2.rate)
+        __test_time(jam_orig, jam_new, D1.rate[0] * D2.rate[0])
 
 
 @pytest.mark.xfail(raises=ValueError)
