@@ -20,12 +20,12 @@ contain (deformed) audio and store the deformation history objects.
     >>> j_orig = muda.load_jam_audio('orig.jams', 'orig.ogg')
     >>> # Ready to go!
 
-    >>> # Loading audio form disk with an existing jams
+    >>> # Loading audio from disk with an existing jams
     >>> j_orig = jams.load('existing_jams_file.jams')
     >>> j_orig = muda.load_jam_audio(existing_jams, 'orig.ogg')
     >>> # Ready to go!
 
-    >>> # Loading in-memory audio with an existing jams
+    >>> # Loading in-memory audio (y, sr) with an existing jams
     >>> j_orig = jams.load('existing_jams_file.jams')
     >>> j_orig = muda.jam_pack(existing_jams, _audio=dict(y=y, sr=sr))
     >>> # Ready to go!
@@ -60,13 +60,48 @@ The pipeline therefore generates 25 examples from the input `j_orig`.
 
     >>> # Load an example audio file with annotation
     >>> j_orig = muda.load_jam_audio('orig.jams', 'orig.ogg')
+
     >>> # Construct a deformation pipeline
     >>> pitch_shift = muda.deformers.RandomPitchShift(n_samples=5)
     >>> time_stretch = muda.deformers.RandomTimeStretch(n_samples=5)
     >>> pipeline = muda.Pipeline(steps=[('pitch_shift', pitch_shift),
     ...                                 ('time_stretch', time_stretch)])
+
     >>> for j_new in pipeline.transform(j_orig):
             process(j_new)
+
+Unions
+^^^^^^
+
+`Union` operators are similar to `Pipelines`, in that they allow multiple deformers to be
+combined as a single object that generates a sequence of deformations.
+The difference between `Union` and `Pipeline` is that a pipeline composes deformations
+together, so that a single output is the result of multiple stages of processing;
+a union only applies one deformation at a time to produce a single output.
+
+The following example is similar to the pipeline example above:
+
+.. code-block:: python
+
+    >>> # Load an example audio file with annotation
+    >>> j_orig = muda.load_jam_audio('orig.jams', 'orig.ogg')
+    >>> # Construct a deformation pipeline
+    >>> pitch_shift = muda.deformers.RandomPitchShift(n_samples=5)
+    >>> time_stretch = muda.deformers.RandomTimeStretch(n_samples=5)
+    >>> union = muda.Union(steps=[('pitch_shift', pitch_shift),
+    ...                           ('time_stretch', time_stretch)])
+    >>> for j_new in union.transform(j_orig):
+            process(j_new)
+
+Each of the resulting `j_new` objects produced by the `union` has had either
+its pitch shifted by the `pitch_shift` object or its time stretched by the
+`time_stretch` object, but not both.
+
+Unions apply deformations in a round-robin schedule, so that the first output
+is produced by the first deformer, the second output is produced by the second
+deformer, and so on, until the list of deformers is exhausted and the first deformer
+produces its second output.
+
 
 Bypass operators
 ^^^^^^^^^^^^^^^^
@@ -100,9 +135,23 @@ This is demonstrated in the following example.
 
 .. code-block:: python
 
+    >>> # Encode an existing pitch shift deformation object
+    >>> pitch_shift = muda.deformers.RandomPitchShift(n_samples=5)
+    >>> ps_str = muda.serialize(pitch_shift)
+    >>> print(ps_str)
+    {"params": {"n_samples": 5, "mean": 0.0, "sigma": 1.0},
+     "__class__": {"py/type": "muda.deformers.pitch.RandomPitchShift"}}
+
+    >>> # Reconstruct the pitch shifter from its string encoding
+    >>> ps2 = muda.deserialize(ps_str)
+
+    >>> # Encode a full pipeline as a string
     >>> pipe_str = muda.serialize(pipeline)
+    
+    >>> # Decode the string to reconstruct a new pipeline object
     >>> new_pipe = muda.deserialize(pipe_str)
+    
+    >>> # Process jams with the new pipeline
     >>> for j_new in new_pipe.transform(j_orig):
             process(j_new)
-
 
