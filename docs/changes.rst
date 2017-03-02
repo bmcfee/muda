@@ -1,8 +1,5 @@
 .. _changes:
 
-Changelog
-=========
-
 v0.1.2
 ------
 This ia a minor bug-fix revision.
