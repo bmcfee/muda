@@ -41,7 +41,7 @@ an input.  Each deformed example is then saved to disk.
 
     >>> pitch = muda.deformers.LinearPitchShift(n_samples=5, lower=-1, upper=1)
     >>> for i, jam_out in enumerate(pitch.transform(j_orig)):
-            muda.save('output_{:02d}.ogg'.format(i),
+    ...     muda.save('output_{:02d}.ogg'.format(i),
     ...               'output_{:02d}.jams'.format(i),
     ...               jam_out)
 
@@ -91,7 +91,7 @@ The following example is similar to the pipeline example above:
     >>> union = muda.Union(steps=[('pitch_shift', pitch_shift),
     ...                           ('time_stretch', time_stretch)])
     >>> for j_new in union.transform(j_orig):
-            process(j_new)
+    ...     process(j_new)
 
 Each of the resulting `j_new` objects produced by the `union` has had either
 its pitch shifted by the `pitch_shift` object or its time stretched by the
@@ -124,7 +124,7 @@ output).
     >>> pipeline = muda.Pipeline(steps=[('pitch_shift', muda.deformers.Bypass(pitch_shift)),
     ...                                 ('time_stretch', muda.deformers.Bypass(time_stretch))])
     >>> for j_new in pipeline.transform(j_orig):
-            process(j_new)
+    ...     process(j_new)
 
 
 Saving deformations
@@ -153,5 +153,5 @@ This is demonstrated in the following example.
     
     >>> # Process jams with the new pipeline
     >>> for j_new in new_pipe.transform(j_orig):
-            process(j_new)
+    ...     process(j_new)
 
