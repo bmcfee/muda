@@ -1,4 +1,8 @@
 .. _examples:
+
+Example usage
+=============
+
 This section gives a quick introduction to using `muda` through example applications.
 
 Loading data
