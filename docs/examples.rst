@@ -68,7 +68,7 @@ The pipeline therefore generates 25 examples from the input `j_orig`.
     ...                                 ('time_stretch', time_stretch)])
 
     >>> for j_new in pipeline.transform(j_orig):
-            process(j_new)
+    ...     process(j_new)
 
 Unions
 ^^^^^^
