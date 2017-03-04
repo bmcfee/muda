@@ -7,43 +7,38 @@ Deformation reference
 Utilities
 ---------
 .. autoclass:: Bypass
-    :no-members:
-    :no-undoc-members:
+    :inherited-members:
 
 Audio deformers
 ---------------
 .. autoclass:: BackgroundNoise
-    :no-members:
-    :no-undoc-members:
+    :inherited-members:
+
 .. autoclass:: DynamicRangeCompression
-    :no-members:
-    :no-undoc-members:
+    :inherited-members:
 
 
 Time-stretch deformers
 ----------------------
 
 .. autoclass:: TimeStretch
-    :no-members:
-    :no-undoc-members:
+    :inherited-members:
 
 .. autoclass:: RandomTimeStretch
-    :no-members:
-    :no-undoc-members:
+    :inherited-members:
+
 .. autoclass:: LogspaceTimeStretch
-    :no-members:
-    :no-undoc-members:
+    :inherited-members:
 
 
 Pitch-shift deformers
 ---------------------
 .. autoclass:: PitchShift
-    :no-members:
-    :no-undoc-members:
+    :inherited-members:
+
 .. autoclass:: RandomPitchShift
-    :no-members:
-    :no-undoc-members:
+    :inherited-members:
+
 .. autoclass:: LinearPitchShift
-    :no-members:
-    :no-undoc-members:
+    :inherited-members:
 

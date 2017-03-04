@@ -58,24 +58,18 @@ copyright = u'2015, Brian McFee'
 
 # Mock the dependencies
 import six
+import mock
 
-if six.PY3:
-    from unittest.mock import MagicMock
-else:
-    from mock import Mock as MagicMock
+MOCK_MODULES = ['librosa',
+                'jsonpickle',
+                'soundfile',
+                'jams',
+                'numpy',
+                'numpy.random',
+                'pyrubberband',
+                'pandas']
 
-class Mock(MagicMock):
-    @classmethod
-    def __getattr__(cls, name):
-        return Mock()
-
-
-MOCK_MODULES = ['librosa', 'librosa.util', 'librosa.output',
-                'jsonpickle', 'soundfile', 'jams',
-                'numpy', 'numpy.random',
-                'pyrubberband', 'pandas']
-
-sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
+sys.modules.update((mod_name, mock.Mock()) for mod_name in MOCK_MODULES)
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -292,10 +286,8 @@ texinfo_documents = [
 
 
 # Example configuration for intersphinx: refer to the Python standard library.
-intersphinx_mapping = {'python': ('http://docs.python.org/2', None),
-                       'numpy': ('http://docs.scipy.org/doc/numpy/', None),
-                       'np': ('http://docs.scipy.org/doc/numpy/', None),
-                       'scipy': ('http://docs.scipy.org/doc/scipy/reference/', None),
-                       'sklearn': ('http://scikit-learn.org/stable/', None),
-                       'librosa': ('http://bmcfee.github.io/librosa', None),
-                       'jams': ('http://pythonhosted.org/jams', None)}
+intersphinx_mapping = {'python': ('https://docs.python.org/2', None),
+                       'numpy': ('https://docs.scipy.org/doc/numpy/', None),
+                       'scipy': ('https://docs.scipy.org/doc/scipy/reference/', None),
+                       'librosa': ('http://librosa.github.io/librosa', None),
+                       'jams': ('http://jams.readthedocs.io/en/latest/', None)}

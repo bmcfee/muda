@@ -18,12 +18,10 @@ Classes
 
 .. autoclass:: BaseTransformer
     :members:
-    :no-undoc-members:
 
 .. autoclass:: Pipeline
-    :members:
-    :no-undoc-members:
+    :inherited-members:
 
 .. autoclass:: Union
-    :members:
-    :no-undoc-members:
+    :inherited-members:
+
