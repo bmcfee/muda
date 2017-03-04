@@ -15,9 +15,6 @@ from ..base import BaseTransformer
 def sample_clip_indices(filename, n_samples, sr):
     '''Calculate the indices at which to sample a fragment of audio from a file.
 
-    This uses pysoundfile to efficiently seek without
-    loading the entire stream.
-
     Parameters
     ----------
     filename : str
