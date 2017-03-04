@@ -232,9 +232,10 @@ class Pipeline(object):
         jam : jams.JAMS
             The jam object to transform
 
-        See also
-        --------
-        BaseTransformer.transform
+        Yields
+        ------
+        jam_out : jams.JAMS
+            The jam objects produced by the transformation sequence
         '''
 
         for output in self.__recursive_transform(jam, self.steps):
@@ -331,9 +332,10 @@ class Union(object):
         jam : jams.JAMS
             The jam object to transform
 
-        See also
-        --------
-        BaseTransformer.transform
+        Yields
+        ------
+        jam_out : jams.JAMS
+            The jam objects produced by each member of the union
         '''
 
         for output in self.__serial_transform(jam, self.steps):
