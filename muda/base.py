@@ -138,7 +138,7 @@ class BaseTransformer(object):
         Examples
         --------
         >>> for jam_out in deformer.transform(jam_in):
-                process(jam_out)
+        ...     process(jam_out)
         '''
 
         for state in self.states(jam):
