@@ -1,1 +1,1 @@
-numpydoc>=0.5
+numpydoc>=0.6
