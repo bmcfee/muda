@@ -70,8 +70,8 @@ def __test_deformer_history(deformer, history):
     d_trans = history['transformer']
     params = deformer.get_params()
 
-    d_trans['params'] == params['params']
-    d_trans['__class__'] == params['__class__'].__name__
+    assert d_trans['params'] == params['params']
+    assert d_trans['__class__'] == params['__class__'].__name__
 
 
 @pytest.mark.parametrize('rate', [0.5, 1.0, 2.0, [1.0, 1.5],
@@ -355,7 +355,7 @@ def test_linear_pitchshift(n_samples, lower, upper, jam_fixture):
         d_state = jam_new.sandbox.muda.history[-1]['state']
         d_tones = d_state['n_semitones']
         tuning = d_state['tuning']
-        assert lower <= d_tones <= 2.0**upper
+        assert lower <= d_tones <= upper
 
         __test_pitch(jam_orig, jam_new, d_tones, tuning)
         n_out += 1
@@ -368,7 +368,7 @@ def test_linear_pitchshift(n_samples, lower, upper, jam_fixture):
 
 def __test_effect(jam_orig, jam_new):
     for ann_orig, ann_new in zip(jam_orig.annotations, jam_new.annotations):
-        ann_orig == ann_new
+        assert ann_orig == ann_new
 
 
 @pytest.fixture(params=[p for p in muda.deformers.sox.PRESETS] +
