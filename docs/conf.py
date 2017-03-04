@@ -290,4 +290,4 @@ intersphinx_mapping = {'python': ('https://docs.python.org/2', None),
                        'numpy': ('https://docs.scipy.org/doc/numpy/', None),
                        'scipy': ('https://docs.scipy.org/doc/scipy/reference/', None),
                        'librosa': ('http://librosa.github.io/librosa', None),
-                       'jams': ('http://pythonhosted.org/jams', None)}
+                       'jams': ('http://jams.readthedocs.io/en/latest/', None)}
