@@ -5,6 +5,7 @@ import re
 import six
 
 import numpy as np
+import soundfile as psf
 
 import jams
 import librosa
@@ -413,6 +414,7 @@ def test_background(noise, n_samples, weight_min, weight_max, jam_fixture):
                                        weight_max=weight_max)
 
     jam_orig = deepcopy(jam_fixture)
+    orig_duration = librosa.get_duration(**jam_orig.sandbox.muda['_audio'])
 
     n_out = 0
     for jam_new in D.transform(jam_orig):
@@ -422,6 +424,19 @@ def test_background(noise, n_samples, weight_min, weight_max, jam_fixture):
 
         assert not np.allclose(jam_orig.sandbox.muda['_audio']['y'],
                                jam_new.sandbox.muda['_audio']['y'])
+
+        d_state = jam_new.sandbox.muda.history[-1]['state']
+        filename = d_state['filename']
+        start = d_state['start']
+        stop = d_state['stop']
+
+        with psf.SoundFile(str(filename), mode='r') as soundf:
+            max_index = len(soundf)
+            noise_sr = soundf.samplerate
+
+        assert 0 <= start < stop
+        assert start < stop <= max_index
+        assert ((stop - start) / float(noise_sr)) == orig_duration
 
         __test_effect(jam_orig, jam_new)
         n_out += 1

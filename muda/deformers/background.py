@@ -12,8 +12,41 @@ import six
 from ..base import BaseTransformer
 
 
-def sample_clip(filename, n_samples, sr, mono=True):
-    '''Sample a fragment of audio from a file.
+def sample_clip_indices(filename, n_samples, sr):
+    '''Calculate the indices at which to sample a fragment of audio from a file.
+
+    Parameters
+    ----------
+    filename : str
+        Path to the input file
+
+    n_samples : int > 0
+        The number of samples to load
+
+    sr : int > 0
+        The target sampling rate
+
+    Returns
+    -------
+    start : int
+        The sample index from `filename` at which the audio fragment starts
+    stop : int
+        The sample index from `filename` at which the audio fragment stops (e.g. y = audio[start:stop])
+    '''
+
+    with psf.SoundFile(str(filename), mode='r') as soundf:
+
+        n_target = int(np.ceil(n_samples * soundf.samplerate / float(sr)))
+
+        # Draw a random clip
+        start = np.random.randint(0, len(soundf) - n_target)
+        stop = start + n_target
+
+        return start, stop
+
+
+def slice_clip(filename, start, stop, n_samples, sr, mono=True):
+    '''Slice a fragment of audio from a file.
 
     This uses pysoundfile to efficiently seek without
     loading the entire stream.
@@ -22,6 +55,12 @@ def sample_clip(filename, n_samples, sr, mono=True):
     ----------
     filename : str
         Path to the input file
+
+    start : int
+        The sample index of `filename` at which the audio fragment should start
+
+    stop : int
+        The sample index of `filename` at which the audio fragment should stop (e.g. y = audio[start:stop])
 
     n_samples : int > 0
         The number of samples to load
@@ -35,7 +74,7 @@ def sample_clip(filename, n_samples, sr, mono=True):
     Returns
     -------
     y : np.ndarray [shape=(n_samples,)]
-        A fragment of audio sampled randomly from `filename`
+        A fragment of audio sampled from `filename`
 
     Raises
     ------
@@ -45,11 +84,7 @@ def sample_clip(filename, n_samples, sr, mono=True):
     '''
 
     with psf.SoundFile(str(filename), mode='r') as soundf:
-
-        n_target = int(np.ceil(n_samples * soundf.samplerate / sr))
-
-        # Draw a random clip
-        start = np.random.randint(0, len(soundf) - n_target)
+        n_target = stop - start
 
         soundf.seek(start)
 
@@ -115,21 +150,26 @@ class BackgroundNoise(BaseTransformer):
         self.weight_max = weight_max
 
     def states(self, jam):
-
+        mudabox = jam.sandbox.muda
         for fname in self.files:
             for _ in range(self.n_samples):
+                start, stop = sample_clip_indices(fname, len(mudabox._audio['y']), mudabox._audio['sr'])
                 yield dict(filename=fname,
                            weight=np.random.uniform(low=self.weight_min,
                                                     high=self.weight_max,
-                                                    size=None))
+                                                    size=None),
+                           start=start,
+                           stop=stop)
 
     def audio(self, mudabox, state):
         weight = state['weight']
         fname = state['filename']
+        start = state['start']
+        stop = state['stop']
 
-        noise = sample_clip(fname, len(mudabox._audio['y']),
-                            mudabox._audio['sr'],
-                            mono=mudabox._audio['y'].ndim == 1)
+        noise = slice_clip(fname, start, stop, len(mudabox._audio['y']),
+                           mudabox._audio['sr'],
+                           mono=mudabox._audio['y'].ndim == 1)
 
         # Normalize the data
         mudabox._audio['y'] = librosa.util.normalize(mudabox._audio['y'])
