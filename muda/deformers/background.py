@@ -39,7 +39,7 @@ def sample_clip_indices(filename, n_samples, sr):
 
     with psf.SoundFile(str(filename), mode='r') as soundf:
 
-        n_target = int(np.ceil(n_samples * soundf.samplerate / sr))
+        n_target = int(np.ceil(n_samples * soundf.samplerate / float(sr)))
 
         # Draw a random clip
         start = np.random.randint(0, len(soundf) - n_target)
