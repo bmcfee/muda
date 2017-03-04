@@ -1,9 +1,9 @@
 .. _muda:
+.. toctree::
+    :maxdepth: 3
 
 Musical Data Augmentation
 =========================
-.. toctree::
-    :maxdepth: 3
 
 The `muda` package implements annotation-aware musical data augmentation, as described in
 the `muda paper <http://bmcfee.github.io/papers/ismir2015_augmentation.pdf>`_ [1]_.
