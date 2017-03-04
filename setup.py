@@ -38,6 +38,7 @@ setup(
         'pysoundfile>=0.8',
         'six',
         'jsonpickle',
+        'cffi'
     ],
     extras_require={
         'docs': ['numpydoc']
