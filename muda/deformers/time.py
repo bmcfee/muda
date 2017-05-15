@@ -45,23 +45,24 @@ class AbstractTimeStretch(BaseTransformer):
     def deform_tempo(annotation, state):
         # Deform a tempo annotation
 
-        annotation.data.value *= state['rate']
+        for obs in annotation.pop_data():
+            annotation.append(time=obs.time, duration=obs.duration,
+                              confidence=obs.confidence,
+                              value=state['rate'] * obs.value)
 
     @staticmethod
     def deform_times(ann, state):
         # Deform time values for all annotations.
 
         ann.time /= state['rate']
-        ann.data.time = [pd.to_timedelta(x.total_seconds() / state['rate'],
-                                         unit='s')
-                         for x in ann.data.time]
 
         if ann.duration is not None:
             ann.duration /= state['rate']
 
-        ann.data.duration = [pd.to_timedelta(x.total_seconds() / state['rate'],
-                                             unit='s')
-                             for x in ann.data.duration]
+        for obs in ann.pop_data():
+            ann.append(time=obs.time / state['rate'],
+                       duration=obs.duration / state['rate'],
+                       value=obs.value, confidence=obs.confidence)
 
 
 class TimeStretch(AbstractTimeStretch):

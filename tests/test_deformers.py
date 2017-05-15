@@ -57,13 +57,15 @@ def __test_time(jam_orig, jam_new, rate):
             ap_(ann_orig.time, rate * ann_new.time)
             ap_(ann_orig.duration, rate * ann_new.duration)
 
-        ap_(ann_orig.data.time.values.astype(float),
-            rate * ann_new.data.time.values.astype(float))
-        ap_(ann_orig.data.duration.values.astype(float),
-            rate * ann_new.data.duration.values.astype(float))
+        assert len(ann_orig.data) == len(ann_new.data)
 
-        if ann_orig.namespace == 'tempo':
-            ap_(rate * ann_orig.data.value, ann_new.data.value)
+        for obs1, obs2 in zip(ann_orig, ann_new):
+
+            ap_(obs1.time, rate * obs2.time)
+            ap_(obs1.duration, rate * obs2.duration)
+
+            if ann_orig.namespace == 'tempo':
+                ap_(rate * obs1.value, obs2.value)
 
 
 def __test_deformer_history(deformer, history):
@@ -222,35 +224,37 @@ def pstrip(x):
 
 def __test_note(ann_orig, ann_new, n):
 
-    # Get the value strings
-    v_orig = np.asarray([pstrip(_) for _ in ann_orig.data.value])
-    v_new = np.asarray([pstrip(_) for _ in ann_new.data.value])
-
-    v_orig = np.mod(np.round(np.mod(v_orig + n, 12)), 12)
-    v_new = np.mod(np.round(np.mod(v_new, 12)), 12)
-    ap_(v_orig, v_new)
+    for obs1, obs2 in zip(ann_orig, ann_new):
+        v_orig = pstrip(obs1.value)
+        v_new = pstrip(obs2.value)
+        v_orig = np.mod(np.round(np.mod(v_orig + n, 12)), 12)
+        v_new = np.mod(np.round(np.mod(v_new, 12)), 12)
+        ap_(v_orig, v_new)
 
 
 def __test_tonic(ann_orig, ann_new, n):
 
-    v_orig = np.asarray([pstrip(_['tonic']) for _ in ann_orig.data.value])
-    v_new = np.asarray([pstrip(_['tonic']) for _ in ann_new.data.value])
+    for obs1, obs2 in zip(ann_orig, ann_new):
+        v_orig = pstrip(obs1.value['tonic'])
+        v_new = pstrip(obs2.value['tonic'])
 
-    v_orig = np.mod(np.round(np.mod(v_orig + n, 12)), 12)
-    v_new = np.mod(np.round(np.mod(v_new, 12)), 12)
-    ap_(v_orig, v_new)
+        v_orig = np.mod(np.round(np.mod(v_orig + n, 12)), 12)
+        v_new = np.mod(np.round(np.mod(v_new, 12)), 12)
+        ap_(v_orig, v_new)
 
 
 def __test_hz(ann_orig, ann_new, n):
 
     scale = 2.0**(float(n) / 12)
 
-    ap_(ann_orig.data.value * scale, ann_new.data.value)
+    for obs1, obs2 in zip(ann_orig, ann_new):
+        ap_(obs1.value * scale, obs2.value)
 
 
 def __test_midi(ann_orig, ann_new, n):
 
-    ap_(ann_orig.data.value + n, ann_new.data.value)
+    for obs1, obs2 in zip(ann_orig, ann_new):
+        ap_(obs1.value + n, obs2.value)
 
 
 def __test_pitch(jam_orig, jam_new, n_semitones, tuning):
@@ -262,6 +266,8 @@ def __test_pitch(jam_orig, jam_new, n_semitones, tuning):
 
     # Test each annotation
     for ann_orig, ann_new in zip(jam_orig.annotations, jam_new.annotations):
+        assert len(ann_orig) == len(ann_new)
+
         if ann_orig.namespace in ['chord', 'chord_harte', 'key_mode']:
             __test_note(ann_orig, ann_new, q_tones)
         elif ann_orig.namespace in ['pitch_class', 'chord_roman']:

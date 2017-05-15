@@ -34,7 +34,7 @@ setup(
         'librosa>=0.4',
         'pyrubberband>=0.1',
         'pandas',
-        'jams>=0.2',
+        'jams>=0.3.0',
         'pysoundfile>=0.8',
         'six',
         'jsonpickle',
