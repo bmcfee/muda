@@ -8,6 +8,7 @@ import pyrubberband as pyrb
 import re
 import numpy as np
 import six
+from copy import deepcopy
 
 from ..base import BaseTransformer
 
@@ -78,11 +79,18 @@ class AbstractPitchShift(BaseTransformer):
 
     @staticmethod
     def deform_frequency(annotation, state):
-        annotation.data.value *= 2.0 ** (state['n_semitones'] / 12.0)
+        scale = 2.0**(state['n_semitones']/12.0)
+        for obs in annotation.pop_data():
+            annotation.append(time=obs.time, duration=obs.duration,
+                              confidence=obs.confidence,
+                              value=scale * obs.value)
 
     @staticmethod
     def deform_midi(annotation, state):
-        annotation.data.value += state['n_semitones']
+        for obs in annotation.pop_data():
+            annotation.append(time=obs.time, duration=obs.duration,
+                              confidence=obs.confidence,
+                              value=obs.value + state['n_semitones'])
 
     @staticmethod
     def deform_tonic(annotation, state):
@@ -92,8 +100,12 @@ class AbstractPitchShift(BaseTransformer):
             # then no label modification is necessary
             return
 
-        for obs in annotation.data.value:
-            obs['tonic'] = transpose(obs['tonic'], state['n_semitones'])
+        for obs in annotation.pop_data():
+            value = deepcopy(obs.value)
+            value['tonic'] = transpose(value['tonic'], state['n_semitones'])
+            annotation.append(time=obs.time, duration=obs.duration,
+                              confidence=obs.confidence,
+                              value=value)
 
     @staticmethod
     def deform_note(annotation, state):
@@ -103,8 +115,10 @@ class AbstractPitchShift(BaseTransformer):
             # then no label modification is necessary
             return
 
-        annotation.data.value = [transpose(obs, state['n_semitones'])
-                                 for obs in annotation.data.value]
+        for obs in annotation.pop_data():
+            annotation.append(time=obs.time, duration=obs.duration,
+                              confidence=obs.confidence,
+                              value=transpose(obs.value, state['n_semitones']))
 
 
 class PitchShift(AbstractPitchShift):
