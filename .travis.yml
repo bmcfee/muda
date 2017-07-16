@@ -31,7 +31,7 @@ before_install:
 
 install:
     # install your own package into the environment
-    - pip install --pre -e .
+    - pip install -e .
 
 script:
     - py.test
