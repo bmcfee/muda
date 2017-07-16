@@ -3,6 +3,12 @@
 Release notes
 =============
 
+v0.1.4
+
+* `#58`_ Updated for compatibility with JAMS 0.3.0
+
+.. _#58: https://github.com/bmcfee/muda/pull/58
+
 v0.1.3
 ------
 
@@ -11,7 +17,7 @@ v0.1.3
 * `#47`_ removed dependency on scikit-learn
 * `#48`_, `#54`_ converted unit tests from nose to py.test
 * `#49`_ `TimeStretch` and `PitchShift` deformers now support multiple values
-* `#52`_ added the `Union` classs
+* `#52`_ added the `Union` class
 
 .. _#40: https://github.com/bmcfee/muda/pull/40
 .. _#44: https://github.com/bmcfee/muda/pull/44
