@@ -31,6 +31,7 @@ if [ ! -d "$src" ]; then
         conda_create
 
         source $src/bin/activate $ENV_NAME
+        conda install -c conda-forge ffmpeg
 
         pip install python-coveralls pytest-cov pytest-faulthandler
 

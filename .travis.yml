@@ -6,7 +6,6 @@ addons:
   apt:
     packages:
     - rubberband-cli
-    - ffmpeg
     - libsndfile1
     - sox
 
