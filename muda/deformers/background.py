@@ -45,7 +45,7 @@ def sample_clip_indices(filename, n_samples, sr):
 
         # Draw a starting point at random in the background waveform
         start = np.random.randint(0, 1 + len(soundf) - n_target)
-        stop = start + target_length
+        stop = start + n_target
 
         return start, stop
 
