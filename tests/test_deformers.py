@@ -458,6 +458,14 @@ def test_background_no_file():
     muda.deformers.BackgroundNoise(files='does-not-exist.ogg', n_samples=1)
 
 
+@pytest.mark.xfail(raises=RuntimeError)
+def test_background_short_file():
+    D = muda.deformers.BackgroundNoise(files='tests/data/fixture.wav')
+    jam_orig = muda.load_jam_audio('tests/data/fixture.jams',
+                                   'tests/data/noise_sample.ogg')
+    jam_new = next(D.transform(jam_orig))
+
+
 def test_pipeline(jam_fixture):
     D1 = muda.deformers.TimeStretch(rate=2.0)
     D2 = muda.deformers.TimeStretch(rate=1.5)
