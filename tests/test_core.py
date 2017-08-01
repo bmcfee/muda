@@ -63,9 +63,14 @@ def jam_loader(request):
             yield fdesc
 
 
-def test_load_jam_audio(jam_loader, audio_file):
+@pytest.mark.parametrize('validate', [False, True])
+@pytest.mark.parametrize('strict', [False, True])
+@pytest.mark.parametrize('fmt', ['auto', 'jams',
+                                 pytest.mark.xfail('jamz', raises=OSError)])
+def test_load_jam_audio(jam_loader, audio_file, validate, strict, fmt):
 
-    jam = muda.load_jam_audio(jam_loader, audio_file)
+    jam = muda.load_jam_audio(jam_loader, audio_file,
+                              validate=validate, strict=strict, fmt=fmt)
 
     assert hasattr(jam.sandbox, 'muda')
 
@@ -73,17 +78,19 @@ def test_load_jam_audio(jam_loader, audio_file):
     assert jam.file_metadata.duration == duration
 
 
-def test_save(jam_in, audio_file):
+@pytest.mark.parametrize('strict', [False, True])
+@pytest.mark.parametrize('fmt', ['auto', 'jams', 'jamz'])
+def test_save(jam_in, audio_file, strict, fmt):
 
     jam = muda.load_jam_audio(jam_in, audio_file)
 
     _, jamfile = tempfile.mkstemp(suffix='.jams')
     _, audfile = tempfile.mkstemp(suffix='.wav')
 
-    muda.save(audfile, jamfile, jam)
+    muda.save(audfile, jamfile, jam, strict=strict, fmt=fmt)
 
-    jam2 = muda.load_jam_audio(jamfile, audfile)
-    jam2_raw = jams.load(jamfile)
+    jam2 = muda.load_jam_audio(jamfile, audfile, fmt=fmt)
+    jam2_raw = jams.load(jamfile, fmt=fmt)
 
     os.unlink(audfile)
     os.unlink(jamfile)

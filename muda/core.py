@@ -65,7 +65,11 @@ def jam_pack(jam, **kwargs):
     return jam
 
 
-def load_jam_audio(jam_in, audio_file, **kwargs):
+def load_jam_audio(jam_in, audio_file,
+                   validate=True,
+                   strict=True,
+                   fmt='auto',
+                   **kwargs):
     '''Load a jam and pack it with audio.
 
     Parameters
@@ -76,6 +80,11 @@ def load_jam_audio(jam_in, audio_file, **kwargs):
 
     audio_file : str
         Audio filename to load
+
+    validate : bool
+    strict : bool
+    fmt : str
+        Parameters to `jams.load`
 
     kwargs : additional keyword arguments
         See `librosa.load`
@@ -100,7 +109,7 @@ def load_jam_audio(jam_in, audio_file, **kwargs):
     if isinstance(jam_in, jams.JAMS):
         jam = jam_in
     else:
-        jam = jams.load(jam_in)
+        jam = jams.load(jam_in, validate=validate, strict=strict, fmt=fmt)
 
     y, sr = librosa.load(audio_file, **kwargs)
 
@@ -110,7 +119,7 @@ def load_jam_audio(jam_in, audio_file, **kwargs):
     return jam_pack(jam, _audio=dict(y=y, sr=sr))
 
 
-def save(filename_audio, filename_jam, jam, strict=True, **kwargs):
+def save(filename_audio, filename_jam, jam, strict=True, fmt='auto', **kwargs):
     '''Save a muda jam to disk
 
     Parameters
@@ -124,9 +133,11 @@ def save(filename_audio, filename_jam, jam, strict=True, **kwargs):
     strict: bool
         Strict safety checking for jams output
 
+    fmt : str
+        Output format parameter for `jams.JAMS.save`
+
     kwargs
         Additional parameters to `soundfile.write`
-
     '''
 
     y = jam.sandbox.muda._audio['y']
@@ -136,7 +147,7 @@ def save(filename_audio, filename_jam, jam, strict=True, **kwargs):
     psf.write(filename_audio, y, sr, **kwargs)
 
     # Then dump the jam
-    jam.save(filename_jam, strict=strict)
+    jam.save(filename_jam, strict=strict, fmt=fmt)
 
 
 def __reconstruct(params):
