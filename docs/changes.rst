@@ -3,8 +3,17 @@
 Release notes
 =============
 
-v0.1.4
+v0.2.0
+------
+* `#61`_ Exposed JAMS input-output arguments in `load_jam_audio` and `save`.
+* `#59`_ Fixed an off-by-one error in background noise sampling -- Vincent Lostanlen
 
+.. _#61: https://github.com/bmcfee/muda/pull/61
+.. _#59: https://github.com/bmcfee/muda/pull/59
+
+
+v0.1.4
+------
 * `#58`_ Updated for compatibility with JAMS 0.3.0
 
 .. _#58: https://github.com/bmcfee/muda/pull/58
