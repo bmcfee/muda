@@ -65,8 +65,10 @@ def jam_loader(request):
 
 @pytest.mark.parametrize('validate', [False, True])
 @pytest.mark.parametrize('strict', [False, True])
+# gzip will throw an IOError on py2, and OSError on py3.
 @pytest.mark.parametrize('fmt', ['auto', 'jams',
-                                 pytest.mark.xfail('jamz', raises=OSError)])
+                                 pytest.mark.xfail('jamz',
+                                                   raises=(OSError, IOError))])
 def test_load_jam_audio(jam_loader, audio_file, validate, strict, fmt):
 
     jam = muda.load_jam_audio(jam_loader, audio_file,
