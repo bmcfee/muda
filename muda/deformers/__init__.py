@@ -8,3 +8,5 @@ from .pitch import *
 from .background import *
 from .sox import *
 from .util import *
+from .colorednoise import *
+from .ir import *
