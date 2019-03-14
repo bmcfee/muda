@@ -1,5 +1,7 @@
 language: python
 
+dist: xenial
+
 sudo: false
 
 addons:
@@ -21,6 +23,7 @@ python:
     - 3.4
     - 3.5
     - 3.6
+    - 3.7
 
 before_install:
     - bash .travis_dependencies.sh
@@ -30,14 +33,10 @@ before_install:
 
 install:
     # install your own package into the environment
-    - pip install -e .
+    - pip install -e .[tests]
 
 script:
-    - py.test
+    - pytest
 
 after_success:
     - coveralls
-    - pip uninstall -y muda
-
-after_failure:
-    - pip uninstall -y muda
