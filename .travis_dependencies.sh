@@ -11,7 +11,7 @@ conda_create ()
     conda update -q conda
     conda config --add channels pypi
     conda info -a
-    deps='pip numpy scipy pytest pandas matplotlib'
+    deps='pip numpy scipy pandas matplotlib'
 
     conda create -q -n $ENV_NAME "python=$TRAVIS_PYTHON_VERSION" $deps
 }
@@ -29,13 +29,11 @@ if [ ! -d "$src" ]; then
 
         export PATH="$src/bin:$PATH"
         conda_create
-
-        source $src/bin/activate $ENV_NAME
+        source activate $ENV_NAME
         conda install -c conda-forge ffmpeg
-
-        pip install python-coveralls pytest-cov pytest-faulthandler
-
+        pip install python-coveralls
         source $src/bin/deactivate
+        source deactivate
     popd
 else
     echo "Using cached dependencies"

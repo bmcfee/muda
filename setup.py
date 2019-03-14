@@ -40,6 +40,7 @@ setup(
         'jsonpickle',
     ],
     extras_require={
-        'docs': ['numpydoc']
+        'docs': ['numpydoc'],
+        'tests': ['pytest < 4', 'pytest-cov'],
     }
 )
