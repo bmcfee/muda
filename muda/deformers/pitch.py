@@ -61,7 +61,7 @@ class AbstractPitchShift(BaseTransformer):
 
         # Build the annotation mapping
         self._register('key_mode|chord|chord_harte', self.deform_note)
-        self._register('pitch_hz', self.deform_frequency)
+        self._register('pitch_contour', self.deform_frequency)
         self._register('pitch_midi', self.deform_midi)
         self._register('chord_roman|pitch_class', self.deform_tonic)
 
@@ -83,7 +83,9 @@ class AbstractPitchShift(BaseTransformer):
         for obs in annotation.pop_data():
             annotation.append(time=obs.time, duration=obs.duration,
                               confidence=obs.confidence,
-                              value=scale * obs.value)
+                              value={'index':obs.value['index'],
+                                     'frequency':scale*obs.value['frequency'],
+                                     'voiced':obs.value['voiced']})
 
     @staticmethod
     def deform_midi(annotation, state):
