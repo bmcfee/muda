@@ -402,6 +402,63 @@
       }
     }, 
     {
+      "namespace": "pitch_hz", 
+      "sandbox": {}, 
+      "time": 0, 
+      "duration": 3.5, 
+      "annotation_metadata": {
+        "annotation_tools": "", 
+        "curator": {
+          "name": "", 
+          "email": ""
+        }, 
+        "annotator": {}, 
+        "version": "", 
+        "corpus": "", 
+        "annotation_rules": "", 
+        "validation": "", 
+        "data_source": ""
+      }, 
+      "data": {
+        "duration": [
+          0.5, 
+          0.5, 
+          0.5, 
+          0.5, 
+          0.5, 
+          0.5, 
+          0.5
+        ], 
+        "confidence": [
+          NaN, 
+          NaN, 
+          NaN, 
+          NaN, 
+          NaN, 
+          NaN, 
+          NaN
+        ], 
+        "value": [
+          130.81278265029931, 
+          146.83238395870379, 
+          164.81377845643496, 
+          174.61411571650194, 
+          195.99771799087463, 
+          220.0, 
+          246.94165062806206
+        ], 
+        "time": [
+          0.0, 
+          0.5, 
+          1.0, 
+          1.5, 
+          2.0, 
+          2.5, 
+          3.0
+        ]
+      }
+    }, 
+    {
       "namespace": "pitch_midi", 
       "sandbox": {}, 
       "time": 0, 
