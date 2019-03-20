@@ -131,7 +131,7 @@ class PitchShift(AbstractPitchShift):
     - Annotations
         - key_mode
         - chord, chord_harte, chord_roman
-        - pitch_hz, pitch_midi, pitch_class
+        - pitch_contour, pitch_midi, pitch_class
     - Audio
 
     Attributes

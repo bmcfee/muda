@@ -317,7 +317,7 @@
       }
     }, 
     {
-      "namespace": "pitch_hz", 
+      "namespace": "pitch_contour", 
       "sandbox": {}, 
       "time": 0, 
       "duration": 3.5, 
@@ -354,13 +354,41 @@
           NaN
         ], 
         "value": [
-          130.81278265029931, 
-          146.83238395870379, 
-          164.81377845643496, 
-          174.61411571650194, 
-          195.99771799087463, 
-          220.0, 
-          246.94165062806206
+          {
+            "index": 0,
+            "frequency": 130.81278265029931,
+            "voiced": true
+          },
+          {
+            "index": 0,
+            "frequency": 146.83238395870379,
+            "voiced": true
+          },
+          {
+            "index": 0,
+            "frequency": 164.81377845643496,
+            "voiced": true
+          },
+          {
+            "index": 0,
+            "frequency": 174.61411571650194,
+            "voiced": true
+          },
+          {
+            "index": 0,
+            "frequency": 195.99771799087463,
+            "voiced": true
+          },
+          {
+            "index": 0,
+            "frequency": 220.0,
+            "voiced": true
+          },
+          {
+            "index": 0,
+            "frequency": 246.94165062806206,
+            "voiced": true
+          }
         ], 
         "time": [
           0.0, 
