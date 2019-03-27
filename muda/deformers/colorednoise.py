@@ -5,10 +5,11 @@
 import numpy as np
 import librosa
 from numpy.fft import irfft
+from numpy import inf
 
 from ..base import BaseTransformer
 
-noise_type = ['white',
+NOISE_TYPES = ['white',
               'pink',
               'brown']
 
@@ -37,28 +38,31 @@ def noise_generator(y, sr, color):
     '''
     n_frames = len(y)
 
-    half_n_frames = n_frames//2 + n_frames%2 + 1
+    if n_frames % 2:
+        n_frames = n_frames + 1
 
-    filter_base = np.arange(half_n_frames)
+    fft_bins = librosa.fft_frequencies(sr=sr, n_fft=n_frames)
 
     if color == 'white':
-        return np.random.randn(n_frames)
+        noise = np.random.randn(n_frames)
 
     else:
-        #0.1 is the offset for avoiding zero
-        noise_filter = {
-            'pink': 1/(np.sqrt(filter_base+0.1)),
-            'brown': 1/(filter_base+0.1),
+        noise_shape = {
+            'pink': 1/(np.sqrt(fft_bins)),
+            'brown': 1/(fft_bins),
             }
+        noise_filter = noise_shape[color]
 
-        noise = np.random.randn(half_n_frames) + 1j * np.random.randn(half_n_frames)
+        noise_filter[noise_filter == inf] = 0 #DC component
 
-        noise = (irfft(noise * noise_filter[color])).real
+        noise = np.random.randn(len(fft_bins)) + 1j * np.random.randn(len(fft_bins))
 
-        if n_frames % 2:
-            noise = noise[:-1]
+        noise = irfft(noise * noise_filter)
 
-        return noise
+    if len(y) % 2:
+        noise = noise[:-1]
+
+    return noise
 
 
 class ColoredNoise(BaseTransformer):
@@ -85,7 +89,7 @@ class ColoredNoise(BaseTransformer):
 
     def states(self, jam):
         for type_name in self.color:
-            if type_name not in noise_type:
+            if type_name not in NOISE_TYPES:
                 raise ValueError("Incorrect color type. Color parameter must be strictly a list ")
 
             for _ in range(self.n_samples):

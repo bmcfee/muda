@@ -8,13 +8,14 @@ import numpy as np
 import pandas as pd
 import scipy
 
+import soundfile as psf
 import librosa
 import jams
 
 from ..base import BaseTransformer
 
 
-def median_group_delay(y, sr=22050, n_fft=2048, rolloff_value = -24):
+def median_group_delay(y, sr, n_fft=2048, rolloff_value = -24):
     '''Compute the average group delay for a signal
 
     Parameters
@@ -59,7 +60,7 @@ def median_group_delay(y, sr=22050, n_fft=2048, rolloff_value = -24):
 class ImpulseResponse(BaseTransformer):
     '''Impulse response filtering'''
 
-    def __init__(self, files=None, estimate_delay=False):
+    def __init__(self, files=None):
         '''Impulse response filtering
 
         Parameters
@@ -75,18 +76,16 @@ class ImpulseResponse(BaseTransformer):
 
         BaseTransformer.__init__(self)
         self.files = files
-        self.estimate_delay = estimate_delay
-
-        self.ir_ = []
         self.delay_ = []
-        self.sr_ = []
+
         for fname in files:
-            self.ir_.append(librosa.load(fname)[0])
-            self.sr_.append(librosa.load(fname)[1])
+            with psf.SoundFile(str(fname), mode='r') as soundf:
+                ir_data = soundf.read()
+                ir_sr = soundf.samplerate
+                #ir_data = np.pad(ir_data,(ir_sr,0),mode = 'constant') #This is the test of a delayed impulse response            
             self.delay_.append(0.0)
-            if estimate_delay:
-                self.delay_[-1] = median_group_delay(y=self.ir_[-1],
-                                                     sr=self.sr_[-1])
+            self.delay_[-1] = median_group_delay(y=ir_data,
+                                                 sr=ir_sr)
         self._register('.*', self.deform_times)
 
     def states(self, jam):
@@ -96,24 +95,26 @@ class ImpulseResponse(BaseTransformer):
         mudabox = jam.sandbox.muda
         state['duration'] = librosa.get_duration(y=mudabox._audio['y'],
                                                  sr=mudabox._audio['sr'])
-
-        for i in range(len(self.ir_)):
+        for i in range(len(self.files)):
             state['index'] = i
             yield state
 
     def audio(self, mudabox, state):
         '''Audio deformation for impulse responses'''
         idx = state['index']
+        #load coresponding ir file
+        with psf.SoundFile(self.files[idx], mode='r') as soundf:
+            ir_data = soundf.read()
 
         # If the input signal isn't big enough, pad it out first
         n = len(mudabox._audio['y'])
-        if n < len(self.ir_[idx]):
+        if n < len(ir_data):
             mudabox._audio['y'] = librosa.util.fix_length(mudabox._audio['y'],
-                                                          self.ir_[idx])
+                                                          ir_data)
 
         mudabox._audio['y'] = scipy.signal.fftconvolve(mudabox._audio['y'],
-                                                       self.ir_[idx],
-                                                       mode='same')
+                                                       ir_data,
+                                                       mode='full')
 
         # Trim back to the original duration
         mudabox._audio['y'] = mudabox._audio['y'][:n]
@@ -125,10 +126,17 @@ class ImpulseResponse(BaseTransformer):
         delay = self.delay_[idx]
 
         for obs in annotation.pop_data():
-            annotation.append(time=obs.time + delay,
-                       duration=obs.duration,
-                       value=obs.value, confidence=obs.confidence)
+            # Drop obervation that fell off the end
+            if obs.time + delay > annotation.duration:
+                #Slice annotation from start time to the annotations duration
+                annotation = annotation.slice(0, annotation.duration, strict=False)
+            else:
+                #truncate observation's duration if its offset fell off the end of annotation
+                if obs.time + obs.duration + delay > annotation.duration:
+                    deformed_duration = annotation.duration - obs.time - delay
+                else:
+                    deformed_duration = obs.duration
 
-            # Drop anything that fell off the end
-            if obs.time > annotation.duration:
-                obs.remove()
+            annotation.append(time=obs.time + delay,
+                       duration=deformed_duration,
+                       value=obs.value, confidence=obs.confidence)
