@@ -243,6 +243,14 @@ def __test_tonic(ann_orig, ann_new, n):
         ap_(v_orig, v_new)
 
 
+def __test_contour(ann_orig, ann_new, n):
+
+    scale = 2.0**(float(n) / 12)
+
+    for obs1, obs2 in zip(ann_orig, ann_new):
+        ap_(obs1.value['frequency'] * scale, obs2.value['frequency'])
+
+
 def __test_hz(ann_orig, ann_new, n):
 
     scale = 2.0**(float(n) / 12)
@@ -272,6 +280,8 @@ def __test_pitch(jam_orig, jam_new, n_semitones, tuning):
             __test_note(ann_orig, ann_new, q_tones)
         elif ann_orig.namespace in ['pitch_class', 'chord_roman']:
             __test_tonic(ann_orig, ann_new, q_tones)
+        elif ann_orig.namespace == 'pitch_contour':
+            __test_contour(ann_orig, ann_new, n_semitones)
         elif ann_orig.namespace == 'pitch_hz':
             __test_hz(ann_orig, ann_new, n_semitones)
         elif ann_orig.namespace == 'pitch_midi':
