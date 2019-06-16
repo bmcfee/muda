@@ -27,7 +27,7 @@ def median_group_delay(y, sr, n_fft=2048, rolloff_value = -24):
         the sampling rate of `y`
 
     n_fft : int > 0
-        the FFT resolution
+        the FFT window size
 
     rolloff_value : int > 0
         If provided, only estimate the groupd delay of the passband that
@@ -41,7 +41,8 @@ def median_group_delay(y, sr, n_fft=2048, rolloff_value = -24):
 
     '''
     if rolloff_value > 0:
-        raise ParameterError('rolloff_value must be strictly negative')
+        #rolloff_value must be strictly negative
+        rolloff_value = -rolloff_value
 
     # frequency response
     _, h_ir = scipy.signal.freqz(y, a=1, worN=n_fft, whole=False, plot=None)
@@ -57,45 +58,57 @@ def median_group_delay(y, sr, n_fft=2048, rolloff_value = -24):
     return np.median(gd_ir[power_ir > threshold])/sr
 
 
-class ImpulseResponse(BaseTransformer):
+class IRConvolution(BaseTransformer):
     '''Impulse response filtering'''
 
-    def __init__(self, files=None):
+    def __init__(self, ir_files, n_fft=2048, rolloff_value = -24):
         '''Impulse response filtering
 
         Parameters
         ----------
 
-        files : str or list of str
+        ir_files : str or list of str
             Path to audio files on disk containing the impulse responses
 
+        n_fft : int > 0
+            FFT window size
+
+        rolloff_value : int > 0
+            If provided, only estimate the groupd delay of the passband that
+            above threshold which is 'rolloff_value' below the peak
+            on frequency response.
+            Positive input will be changed to negative
         '''
 
-        if isinstance(files, six.string_types):
-            files = [files]
+        if isinstance(ir_files, six.string_types):
+            ir_files = [ir_files]
 
         BaseTransformer.__init__(self)
-        self.files = files
+        self.ir_files = ir_files
         self.delay_ = []
+        self.n_fft = n_fft
+        self.rolloff_value = rolloff_value
 
-        for fname in files:
+        for fname in ir_files:
             with psf.SoundFile(str(fname), mode='r') as soundf:
                 ir_data = soundf.read()
                 ir_sr = soundf.samplerate
-                #ir_data = np.pad(ir_data,(ir_sr,0),mode = 'constant') #This is the test of a delayed impulse response            
+                #ir_data = np.pad(ir_data,(ir_sr,0),mode = 'constant') #This is the test of a delayed impulse response
             self.delay_.append(0.0)
             self.delay_[-1] = median_group_delay(y=ir_data,
-                                                 sr=ir_sr)
+                                                 sr=ir_sr,
+                                                 n_fft=n_fft,
+                                                 rolloff_value = rolloff_value)
         self._register('.*', self.deform_times)
 
     def states(self, jam):
+        mudabox = jam.sandbox.muda
         '''Iterate the impulse respones states'''
 
         state = dict()
-        mudabox = jam.sandbox.muda
         state['duration'] = librosa.get_duration(y=mudabox._audio['y'],
                                                  sr=mudabox._audio['sr'])
-        for i in range(len(self.files)):
+        for i in range(len(self.ir_files)):
             state['index'] = i
             yield state
 
@@ -103,14 +116,14 @@ class ImpulseResponse(BaseTransformer):
         '''Audio deformation for impulse responses'''
         idx = state['index']
         #load coresponding ir file
-        with psf.SoundFile(self.files[idx], mode='r') as soundf:
+        with psf.SoundFile(self.ir_files[idx], mode='r') as soundf:
             ir_data = soundf.read()
 
         # If the input signal isn't big enough, pad it out first
         n = len(mudabox._audio['y'])
         if n < len(ir_data):
             mudabox._audio['y'] = librosa.util.fix_length(mudabox._audio['y'],
-                                                          ir_data)
+                                                          len(ir_data))
 
         mudabox._audio['y'] = scipy.signal.fftconvolve(mudabox._audio['y'],
                                                        ir_data,
@@ -124,11 +137,11 @@ class ImpulseResponse(BaseTransformer):
         #duration = pd.to_timedelta(state['duration'], unit='s')
         idx = state['index']
         delay = self.delay_[idx]
-
         for obs in annotation.pop_data():
             # Drop obervation that fell off the end
+
             if obs.time + delay > annotation.duration:
-                #Slice annotation from start time to the annotations duration
+                #Drop the annotation if its delayed onset out of the range of duration
                 annotation = annotation.slice(0, annotation.duration, strict=False)
             else:
                 #truncate observation's duration if its offset fell off the end of annotation

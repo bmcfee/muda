@@ -20,7 +20,7 @@ Audio deformers
 .. autoclass:: ColoredNoise
     :inherited-members:
 
-.. autoclass:: ImpulseResponse
+.. autoclass:: IRConvolution
     :inherited-members:
 
 Time-stretch deformers

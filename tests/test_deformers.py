@@ -13,6 +13,7 @@ import librosa
 import muda
 
 import pytest
+import scipy
 
 
 def ap_(a, b, msg=None, rtol=1e-5, atol=1e-5):
@@ -465,6 +466,158 @@ def test_background_short_file():
                                    'tests/data/noise_sample.ogg')
     jam_new = next(D.transform(jam_orig))
 
+def isclose_(a, b, rtol=1e-5, atol=1e-2):
+    """Shorthand for 'assert np.isclose(a, b, rtol, atol)"""
+    if not np.isclose(a, b, rtol=rtol, atol=atol):
+        raise AssertionError("{}(Expectation)!= {}(Estimation)".format(a, b))
+
+def __test_color_slope(jam_orig, jam_new, color):
+
+    colored_noise_data = jam_new.sandbox.muda['_audio']['y']
+    colored_noise_sr = jam_new.sandbox.muda['_audio']['sr']
+
+    #Verify that the sampling rate hasn't changed
+    assert jam_orig.sandbox.muda['_audio']['sr'] == colored_noise_sr
+    #estimate the power spectrum slope on log-log scale
+    n_frames = len(colored_noise_data)
+    y_power = np.absolute(np.fft.rfft(colored_noise_data)) ** 2
+    freqs = np.fft.rfftfreq(n_frames, 1/colored_noise_sr)
+    x = np.log(freqs[1:])
+    y = np.log(y_power[1:])
+    #rounded off to the 3 digits after the decimal point
+    estimated_slope = round(scipy.stats.linregress(x,y)[0],3)
+    if color == 'white':
+        expected_slope = -0.0
+        isclose_(expected_slope,estimated_slope)
+    elif color == 'pink':
+        expected_slope = -1.0
+        isclose_(expected_slope,estimated_slope)
+    elif color == 'brownian':
+        expected_slope = -2.0
+        isclose_(expected_slope,estimated_slope)
+    else:
+        raise ValueError('Unknown noise color\n')
+    print(estimated_slope)
+
+@pytest.fixture(scope='module')
+def jam_silence_96k():
+    return muda.load_jam_audio('tests/data/silence_96k.jams',
+                               'tests/data/silence_96k.wav')
+@pytest.fixture(scope='module')
+def jam_silence_8k():
+    return muda.load_jam_audio('tests/data/silence_8k.jams',
+                               'tests/data/silence_8k.wav')
+
+@pytest.mark.parametrize('jam_test_silence', [(jam_silence_96k()),(jam_silence_8k())])
+@pytest.mark.parametrize('color', [['white'],['pink'],['brownian'],
+                          pytest.mark.xfail(['unknown'], raises=ValueError)])
+@pytest.mark.parametrize('weight_min, weight_max',
+                         [(0.01, 0.6), (0.1, 0.8), (0.5, 0.99),
+                          pytest.mark.xfail((0.0, 0.5), raises=ValueError),
+                          pytest.mark.xfail((-1, 0.5), raises=ValueError),
+                          pytest.mark.xfail((0.5, 1.5), raises=ValueError),
+                          pytest.mark.xfail((0.75, 0.25), raises=ValueError)])
+def test_colorednoise(n_samples, color, weight_min, weight_max, jam_test_silence):
+
+    D = muda.deformers.ColoredNoise(n_samples = n_samples,
+                                       color = color,
+                                       weight_min = weight_min,
+                                       weight_max = weight_max,
+                                       seed = True)
+    jam_orig = deepcopy(jam_test_silence)
+
+    orig_duration = librosa.get_duration(**jam_orig.sandbox.muda['_audio'])
+
+    n_out = 0
+    for jam_new in D.transform(jam_orig):
+
+        assert jam_new is not jam_test_silence
+        __test_effect(jam_orig, jam_test_silence)
+
+        assert not np.allclose(jam_orig.sandbox.muda['_audio']['y'],
+                                   jam_new.sandbox.muda['_audio']['y'])
+        #verify that duration hasn't changed
+        assert librosa.get_duration(**jam_new.sandbox.muda['_audio']) == orig_duration
+
+        # Verify that the state and history objects are intact
+        __test_deformer_history(D, jam_new.sandbox.muda.history[-1])
+
+        __test_effect(jam_orig, jam_new)
+
+        #Verify the colored noise has desired slope for its log-log scale power spectrum
+        color = jam_new.sandbox.muda.history[-1]['state']['colortype']
+        __test_color_slope(jam_orig, jam_new, color)
+
+        n_out += 1
+    assert n_out == n_samples
+    # Serialization test
+    D2 = muda.deserialize(muda.serialize(D))
+    assert D.get_params() == D2.get_params()
+
+def __test_duration(jam_orig, jam_shifted, orig_duration):
+    #Verify the duration of last delayed annotation is in valid range
+    #Verify the total duration hasn't changed
+    assert (librosa.get_duration(**jam_shifted.sandbox.muda['_audio'])) == orig_duration
+
+    shifted_data = jam_shifted.search(namespace='chord')[0].data
+    #the expected duration of last annotation = Duration - Onset of last annotation
+    ref_duration = orig_duration - shifted_data[-1][0] #[-1][0] indicates the 'time' of last observation
+    #deformed duration:
+    derformed_duration = shifted_data[-1][1] #[-1][0] indicates the 'duration' of last observation
+    isclose_(ref_duration,derformed_duration,rtol=1e-5, atol=1e-1)
+
+def __test_shifted_impulse(jam_orig, jam_new, ir_files, orig_duration, n_fft, rolloff_value):
+
+    #delayed impulse
+    with psf.SoundFile(str(ir_files), mode='r') as soundf:
+        ir_data = soundf.read()
+        ir_sr = soundf.samplerate
+
+    #delay the impulse signal by zero-padding 1-second long zeros
+    ir_data_delayed = np.pad(ir_data,(ir_sr,0),mode = 'constant')
+
+    #dump the delayed audio file
+    psf.write('tests/data/ir_file_delayed.wav', ir_data_delayed, ir_sr)
+
+    D_delayed = muda.deformers.IRConvolution(ir_files = 'tests/data/ir_file_delayed.wav',
+                                             n_fft=n_fft, rolloff_value = rolloff_value)
+
+    for jam_shifted in D_delayed.transform(jam_orig):
+
+        #Verify the duration that delayed annotations(Using chords here) are in valid range
+        __test_duration(jam_orig, jam_shifted, orig_duration)
+
+        shifted_data = jam_shifted.search(namespace='chord')[0].data
+        delayed_data = jam_new.search(namespace='chord')[0].data
+
+        for i in range(len(shifted_data)):
+            #For each observation, verify its onset time has been shifted 1s
+            isclose_(1.00,shifted_data[i][0] - delayed_data[i][0])
+
+@pytest.mark.parametrize('ir_files', ['tests/data/ir2_48k.wav',
+                                   'tests/data/ir1_96k.wav'])
+@pytest.mark.parametrize('n_fft', [256,1024])
+@pytest.mark.parametrize('rolloff_value', [-36,12])
+
+def test_ir_convolution(ir_files,jam_fixture,n_fft,rolloff_value):
+    D = muda.deformers.IRConvolution(ir_files = ir_files, n_fft=n_fft, rolloff_value = rolloff_value)
+
+    jam_orig = deepcopy(jam_fixture)
+    orig_duration = librosa.get_duration(**jam_orig.sandbox.muda['_audio'])
+
+    for jam_new in D.transform(jam_orig):
+        # Verify that the original jam reference hasn't changed
+        assert jam_new is not jam_orig
+
+        #Testing with shifted impulse
+        __test_shifted_impulse(jam_orig, jam_new, ir_files, orig_duration,n_fft=n_fft, rolloff_value = rolloff_value)
+
+        #Verify that the state and history objects are intact
+        __test_deformer_history(D, jam_new.sandbox.muda.history[-1])
+
+    # Serialization test
+    D2 = muda.deserialize(muda.serialize(D))
+    assert D.get_params() == D2.get_params()
 
 def test_pipeline(jam_fixture):
     D1 = muda.deformers.TimeStretch(rate=2.0)

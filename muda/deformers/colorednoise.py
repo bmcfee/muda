@@ -4,16 +4,15 @@
 
 import numpy as np
 import librosa
-from numpy.fft import irfft
 from numpy import inf
 
 from ..base import BaseTransformer
 
 NOISE_TYPES = ['white',
               'pink',
-              'brown']
+              'brownian']
 
-def noise_generator(y, sr, color):
+def noise_generator(y, sr, color, seed):
     '''generating noise given the type of color, length of
        the degrading audio clip and its sampling rate.
 
@@ -38,31 +37,24 @@ def noise_generator(y, sr, color):
     '''
     n_frames = len(y)
 
-    if n_frames % 2:
-        n_frames = n_frames + 1
+    if seed:
+        np.random.seed(True)
+    noise_white = np.random.randn(n_frames)
 
-    fft_bins = librosa.fft_frequencies(sr=sr, n_fft=n_frames)
+    noise_fft = np.fft.rfft(noise_white)
 
-    if color == 'white':
-        noise = np.random.randn(n_frames)
+    if color == 'pink':
+        colored_filter = np.sqrt(np.linspace(1, n_frames/2 + 1, n_frames/2 + 1))**(-1)
+
+    elif color == 'brownian':
+        colored_filter = np.linspace(1, n_frames/2 + 1, n_frames/2 + 1)**(-1)
 
     else:
-        noise_shape = {
-            'pink': 1/(np.sqrt(fft_bins)),
-            'brown': 1/(fft_bins),
-            }
-        noise_filter = noise_shape[color]
+        colored_filter = np.linspace(1, n_frames/2 + 1, n_frames/2 + 1)**0 #default white
 
-        noise_filter[noise_filter == inf] = 0 #DC component
+    noise_filtered = noise_fft * colored_filter
 
-        noise = np.random.randn(len(fft_bins)) + 1j * np.random.randn(len(fft_bins))
-
-        noise = irfft(noise * noise_filter)
-
-    if len(y) % 2:
-        noise = noise[:-1]
-
-    return noise
+    return np.fft.irfft(noise_filtered)
 
 
 class ColoredNoise(BaseTransformer):
@@ -72,7 +64,7 @@ class ColoredNoise(BaseTransformer):
     noise given the desired type and the length of clip data for degrading
     '''
 
-    def __init__(self, n_samples, color=None, weight_min=0.1, weight_max=0.5):
+    def __init__(self, n_samples, color=None, weight_min=0.1, weight_max=0.5, seed = None ):
 
         if n_samples <= 0:
             raise ValueError('n_samples must be strictly positive')
@@ -86,27 +78,31 @@ class ColoredNoise(BaseTransformer):
         self.color = color
         self.weight_min = weight_min
         self.weight_max = weight_max
+        self.seed = seed
 
     def states(self, jam):
-        for type_name in self.color:
-            if type_name not in NOISE_TYPES:
-                raise ValueError("Incorrect color type. Color parameter must be strictly a list ")
-
-            for _ in range(self.n_samples):
+        mudabox = jam.sandbox.muda
+        for _ in range(self.n_samples):
+            for type_name in self.color:
+                if type_name not in NOISE_TYPES:
+                    raise ValueError("Incorrect color type. Color parameter must from [white, pink, brownian] and be a list strictly")
                 yield dict(colortype = type_name,
                            weight=np.random.uniform(low=self.weight_min,
                                                     high=self.weight_max,
-                                                    size=None))
+                                                    size=None),
+                            seed = self.seed)
 
     def audio(self, mudabox, state):
 
         weight = state['weight']
         colortype = state['colortype']
+        seed = state['seed']
 
         #Generating the noise data
         noise = noise_generator(y = mudabox._audio['y'],
                                 sr = mudabox._audio['sr'],
-                                color = colortype)
+                                color = colortype,
+                                seed = seed)
 
         # Normalize the data
         mudabox._audio['y'] = librosa.util.normalize(mudabox._audio['y'])
