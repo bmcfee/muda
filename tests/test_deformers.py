@@ -481,7 +481,7 @@ def __test_color_slope(jam_orig, jam_new, color):
     #estimate the power spectrum slope on log-log scale
     n_frames = len(colored_noise_data)
     y_power = np.absolute(np.fft.rfft(colored_noise_data)) ** 2
-    freqs = np.fft.rfftfreq(n_frames, 1/colored_noise_sr)
+    freqs = np.fft.rfftfreq(n_frames, 1/float(colored_noise_sr))
     x = np.log(freqs[1:])
     y = np.log(y_power[1:])
     #rounded off to the 3 digits after the decimal point
@@ -530,7 +530,10 @@ def test_colorednoise(n_samples, color, weight_min, weight_max, jam_test_silence
 
     n_out = 0
     for jam_new in D.transform(jam_orig):
-
+        print('===================================')
+        print(jam_orig.sandbox.muda['_audio']['sr'])
+        print(jam_new.sandbox.muda['_audio']['sr'])
+        print('===================================')
         assert jam_new is not jam_test_silence
         __test_effect(jam_orig, jam_test_silence)
 
