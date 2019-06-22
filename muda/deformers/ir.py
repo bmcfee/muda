@@ -85,71 +85,59 @@ class IRConvolution(BaseTransformer):
 
         BaseTransformer.__init__(self)
         self.ir_files = ir_files
-        self.delay_ = []
         self.n_fft = n_fft
         self.rolloff_value = rolloff_value
-
-        for fname in ir_files:
-            with psf.SoundFile(str(fname), mode='r') as soundf:
-                ir_data = soundf.read()
-                ir_sr = soundf.samplerate
-                #ir_data = np.pad(ir_data,(ir_sr,0),mode = 'constant') #This is the test of a delayed impulse response
-            self.delay_.append(0.0)
-            self.delay_[-1] = median_group_delay(y=ir_data,
-                                                 sr=ir_sr,
-                                                 n_fft=n_fft,
-                                                 rolloff_value = rolloff_value)
         self._register('.*', self.deform_times)
 
-    def states(self, jam):
-        mudabox = jam.sandbox.muda
-        '''Iterate the impulse respones states'''
+    @staticmethod
+    def deform_times(annotation, state):
+    # Deform time values for all annotations.
 
-        state = dict()
-        state['duration'] = librosa.get_duration(y=mudabox._audio['y'],
-                                                 sr=mudabox._audio['sr'])
-        for i in range(len(self.ir_files)):
-            state['index'] = i
-            yield state
+        ir_groupdelay = state['ir_groupdelay']
 
-    def audio(self, mudabox, state):
-        '''Audio deformation for impulse responses'''
-        idx = state['index']
-        #load coresponding ir file
-        with psf.SoundFile(self.ir_files[idx], mode='r') as soundf:
-            ir_data = soundf.read()
-
-        # If the input signal isn't big enough, pad it out first
-        n = len(mudabox._audio['y'])
-        if n < len(ir_data):
-            mudabox._audio['y'] = librosa.util.fix_length(mudabox._audio['y'],
-                                                          len(ir_data))
-
-        mudabox._audio['y'] = scipy.signal.fftconvolve(mudabox._audio['y'],
-                                                       ir_data,
-                                                       mode='full')
-
-        # Trim back to the original duration
-        mudabox._audio['y'] = mudabox._audio['y'][:n]
-
-    def deform_times(self, annotation, state):
-        '''Apply group delay for the selected filter'''
-        #duration = pd.to_timedelta(state['duration'], unit='s')
-        idx = state['index']
-        delay = self.delay_[idx]
         for obs in annotation.pop_data():
             # Drop obervation that fell off the end
 
-            if obs.time + delay > annotation.duration:
+            if obs.time + ir_groupdelay > annotation.duration:
                 #Drop the annotation if its delayed onset out of the range of duration
                 annotation = annotation.slice(0, annotation.duration, strict=False)
             else:
                 #truncate observation's duration if its offset fell off the end of annotation
-                if obs.time + obs.duration + delay > annotation.duration:
-                    deformed_duration = annotation.duration - obs.time - delay
+                if obs.time + obs.duration + ir_groupdelay > annotation.duration:
+                    deformed_duration = annotation.duration - obs.time - ir_groupdelay
                 else:
                     deformed_duration = obs.duration
 
-            annotation.append(time=obs.time + delay,
+            annotation.append(time=obs.time + ir_groupdelay,
                        duration=deformed_duration,
                        value=obs.value, confidence=obs.confidence)
+
+    def states(self, jam):
+        mudabox = jam.sandbox.muda
+
+        for fname in self.ir_files:
+            #load and resample ir
+            y_ir, sr_ir = librosa.load(fname,sr = mudabox._audio['sr'])
+            #y_ir = np.pad(y_ir,(sr_ir,0),mode = 'constant') #This is the test of a delayed impulse response
+            estimated_group_delay = median_group_delay(y=y_ir,
+                                                       sr=sr_ir,
+                                                       n_fft=self.n_fft,
+                                                       rolloff_value = self.rolloff_value)
+            yield dict(filename = fname,
+                       ir_groupdelay = estimated_group_delay)
+
+    def audio(self, mudabox, state):
+        # Deform the audio
+        fname = state['filename']
+
+        y_ir, sr_ir = librosa.load(fname,sr = mudabox._audio['sr'])
+
+        # If the input signal isn't big enough, pad it out first
+        n = len(mudabox._audio['y'])
+        if n < len(y_ir):
+            mudabox._audio['y'] = librosa.util.fix_length(mudabox._audio['y'],
+                                                          len(y_ir))
+
+        mudabox._audio['y'] = scipy.signal.fftconvolve(mudabox._audio['y'],
+                                                       y_ir,
+                                                       mode='same')
