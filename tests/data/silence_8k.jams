@@ -1,0 +1,23 @@
+{
+  "annotations": [],
+  "file_metadata": {
+    "title": "",
+    "artist": "",
+    "release": "",
+    "duration": 3.0,
+    "identifiers": {},
+    "jams_version": "0.3.3"
+  },
+  "sandbox": {
+    "muda": {
+      "history": [],
+      "state": [],
+      "version": {
+        "muda": "0.2.0",
+        "librosa": "0.6.3",
+        "jams": "0.3.3",
+        "pysoundfile": "0.9.0"
+      }
+    }
+  }
+}

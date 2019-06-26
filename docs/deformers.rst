@@ -17,6 +17,11 @@ Audio deformers
 .. autoclass:: DynamicRangeCompression
     :inherited-members:
 
+.. autoclass:: ColoredNoise
+    :inherited-members:
+
+.. autoclass:: IRConvolution
+    :inherited-members:
 
 Time-stretch deformers
 ----------------------
@@ -30,7 +35,6 @@ Time-stretch deformers
 .. autoclass:: LogspaceTimeStretch
     :inherited-members:
 
-
 Pitch-shift deformers
 ---------------------
 .. autoclass:: PitchShift
@@ -41,4 +45,3 @@ Pitch-shift deformers
 
 .. autoclass:: LinearPitchShift
     :inherited-members:
-
