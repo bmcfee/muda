@@ -78,6 +78,26 @@ def __test_deformer_history(deformer, history):
     assert d_trans['__class__'] == params['__class__'].__name__
 
 
+def __test_params(D1, D2):
+
+    p1 = D1.get_params()['params']
+    r1 = p1.pop('rng', None)
+
+    p2 = D2.get_params()['params']
+    r2 = p2.pop('rng', None)
+
+    # Make sure that all parameters are preserved
+    assert p1 == p2
+
+    # Comparing random states is a pain
+    if r1 is not None or r2 is not None:
+        for (v1, v2) in zip(r1.get_state(), r2.get_state()):
+            if isinstance(v1, six.string_types):
+                assert v1 == v2
+            else:
+                assert np.allclose(v1, v2)
+
+
 @pytest.mark.parametrize('rate', [0.5, 1.0, 2.0, [1.0, 1.5],
                                   pytest.mark.xfail(-1, raises=ValueError),
                                   pytest.mark.xfail(-0.5, raises=ValueError),
@@ -107,7 +127,7 @@ def test_timestretch(rate, jam_fixture):
 
     # Serialization test
     D2 = muda.deserialize(muda.serialize(D))
-    assert D.get_params() == D2.get_params()
+    __test_params(D, D2)
 
 
 @pytest.fixture(params=[1, 3, 5,
@@ -148,7 +168,7 @@ def test_log_timestretch(n_samples, lower, upper, jam_fixture):
     assert n_samples == n_out
     # Serialization test
     D2 = muda.deserialize(muda.serialize(D))
-    assert D.get_params() == D2.get_params()
+    __test_params(D, D2)
 
 
 @pytest.mark.parametrize('scale',
@@ -157,8 +177,7 @@ def test_log_timestretch(n_samples, lower, upper, jam_fixture):
                           pytest.mark.xfail(-1, raises=ValueError)])
 def test_random_timestretch(n_samples, scale, jam_fixture):
 
-    np.random.seed(0)
-    D = muda.deformers.RandomTimeStretch(n_samples=n_samples, scale=scale)
+    D = muda.deformers.RandomTimeStretch(n_samples=n_samples, scale=scale, rng=0)
 
     jam_orig = deepcopy(jam_fixture)
 
@@ -180,7 +199,7 @@ def test_random_timestretch(n_samples, scale, jam_fixture):
     assert n_samples == n_out
     # Serialization test
     D2 = muda.deserialize(muda.serialize(D))
-    assert D.get_params() == D2.get_params()
+    __test_params(D, D2)
 
 
 @pytest.fixture(scope='module',
@@ -212,7 +231,7 @@ def test_bypass(D_simple, jam_fixture):
         __test_deformer_history(D_simple, jam_new.sandbox.muda.history[-1])
     # Serialization test
     D2 = muda.deserialize(muda.serialize(D))
-    assert D.get_params() == D2.get_params()
+    __test_params(D, D2)
 
 
 def pstrip(x):
@@ -292,7 +311,6 @@ def __test_pitch(jam_orig, jam_new, n_semitones, tuning):
 @pytest.mark.parametrize('n_semitones',
                          [-2, -1, -0.5, -0.25, 0, 0.25, 1.0, 1.5, [-1, 1]])
 def test_pitchshift(n_semitones, jam_fixture):
-    np.random.seed(0)
     D = muda.deformers.PitchShift(n_semitones=n_semitones)
 
     jam_orig = deepcopy(jam_fixture)
@@ -316,7 +334,7 @@ def test_pitchshift(n_semitones, jam_fixture):
         __test_pitch(jam_orig, jam_new, d_tones, tuning)
     # Serialization test
     D2 = muda.deserialize(muda.serialize(D))
-    assert D.get_params() == D2.get_params()
+    __test_params(D, D2)
 
 
 @pytest.mark.parametrize('sigma',
@@ -347,7 +365,7 @@ def test_random_pitchshift(n_samples, sigma, jam_fixture):
     assert n_out == n_samples
     # Serialization test
     D2 = muda.deserialize(muda.serialize(D))
-    assert D.get_params() == D2.get_params()
+    __test_params(D, D2)
 
 
 @pytest.mark.parametrize('lower, upper',
@@ -381,7 +399,7 @@ def test_linear_pitchshift(n_samples, lower, upper, jam_fixture):
     assert n_out == n_samples
     # Serialization test
     D2 = muda.deserialize(muda.serialize(D))
-    assert D.get_params() == D2.get_params()
+    __test_params(D, D2)
 
 
 def __test_effect(jam_orig, jam_new):
@@ -412,7 +430,7 @@ def test_drc(preset, jam_fixture):
         __test_effect(jam_orig, jam_new)
     # Serialization test
     D2 = muda.deserialize(muda.serialize(D))
-    assert D.get_params() == D2.get_params()
+    __test_params(D, D2)
 
 
 @pytest.mark.parametrize('noise', ['tests/data/noise_sample.ogg',
@@ -461,7 +479,7 @@ def test_background(noise, n_samples, weight_min, weight_max, jam_fixture):
     assert n_out == n_samples
     # Serialization test
     D2 = muda.deserialize(muda.serialize(D))
-    assert D.get_params() == D2.get_params()
+    __test_params(D, D2)
 
 
 @pytest.mark.xfail(raises=RuntimeError)
@@ -476,7 +494,7 @@ def test_background_short_file():
                                    'tests/data/noise_sample.ogg')
     jam_new = next(D.transform(jam_orig))
 
-def isclose_(a, b, rtol=1e-5, atol=1e-2):
+def isclose_(a, b, rtol=1e-5, atol=2.5e-1):
     """Shorthand for 'assert np.isclose(a, b, rtol, atol)"""
     if not np.isclose(a, b, rtol=rtol, atol=atol):
         raise AssertionError("{}(Expectation)!= {}(Estimation)".format(a, b))
@@ -507,16 +525,19 @@ def __test_color_slope(jam_orig, jam_new, color):
         isclose_(expected_slope,estimated_slope)
     else:
         raise ValueError('Unknown noise color\n')
-    print(estimated_slope)
+
 
 @pytest.fixture(scope='module')
 def jam_silence_96k():
     return muda.load_jam_audio('tests/data/silence_96k.jams',
                                'tests/data/silence_96k.wav')
+
+
 @pytest.fixture(scope='module')
 def jam_silence_8k():
     return muda.load_jam_audio('tests/data/silence_8k.jams',
                                'tests/data/silence_8k.wav')
+
 
 @pytest.mark.parametrize('jam_test_silence', [(jam_silence_96k()),(jam_silence_8k())])
 @pytest.mark.parametrize('color', [['white'],['pink'],['brownian'],
@@ -529,27 +550,23 @@ def jam_silence_8k():
                           pytest.mark.xfail((0.75, 0.25), raises=ValueError)])
 def test_colorednoise(n_samples, color, weight_min, weight_max, jam_test_silence):
 
-    D = muda.deformers.ColoredNoise(n_samples = n_samples,
-                                       color = color,
-                                       weight_min = weight_min,
-                                       weight_max = weight_max,
-                                       seed = True)
+    D = muda.deformers.ColoredNoise(n_samples=n_samples,
+                                    color=color,
+                                    weight_min=weight_min,
+                                    weight_max=weight_max,
+                                    rng=0)
     jam_orig = deepcopy(jam_test_silence)
 
     orig_duration = librosa.get_duration(**jam_orig.sandbox.muda['_audio'])
 
     n_out = 0
     for jam_new in D.transform(jam_orig):
-        print('===================================')
-        print(jam_orig.sandbox.muda['_audio']['sr'])
-        print(jam_new.sandbox.muda['_audio']['sr'])
-        print('===================================')
         assert jam_new is not jam_test_silence
         __test_effect(jam_orig, jam_test_silence)
 
         assert not np.allclose(jam_orig.sandbox.muda['_audio']['y'],
-                                   jam_new.sandbox.muda['_audio']['y'])
-        #verify that duration hasn't changed
+                               jam_new.sandbox.muda['_audio']['y'])
+        # verify that duration hasn't changed
         assert librosa.get_duration(**jam_new.sandbox.muda['_audio']) == orig_duration
 
         # Verify that the state and history objects are intact
@@ -557,15 +574,16 @@ def test_colorednoise(n_samples, color, weight_min, weight_max, jam_test_silence
 
         __test_effect(jam_orig, jam_new)
 
-        #Verify the colored noise has desired slope for its log-log scale power spectrum
-        color = jam_new.sandbox.muda.history[-1]['state']['colortype']
+        # Verify the colored noise has desired slope for its log-log
+        # scale power spectrum
+        color = jam_new.sandbox.muda.history[-1]['state']['color']
         __test_color_slope(jam_orig, jam_new, color)
 
         n_out += 1
     assert n_out == n_samples
     # Serialization test
     D2 = muda.deserialize(muda.serialize(D))
-    assert D.get_params() == D2.get_params()
+    __test_params(D, D2)
 
 def __test_duration(jam_orig, jam_shifted, orig_duration):
     #Verify the duration of last delayed annotation is in valid range
@@ -630,7 +648,7 @@ def test_ir_convolution(ir_files,jam_fixture,n_fft,rolloff_value):
 
     # Serialization test
     D2 = muda.deserialize(muda.serialize(D))
-    assert D.get_params() == D2.get_params()
+    __test_params(D, D2)
 
 def test_pipeline(jam_fixture):
     D1 = muda.deformers.TimeStretch(rate=2.0)

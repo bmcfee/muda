@@ -1,18 +1,16 @@
-#path:../site-packages/muda/deformers/colorednoise.py
-
+#!/usr/bin/env python
+# -*- encoding: utf-8 -*-
 '''Additive colored noise'''
 
 import numpy as np
 import librosa
-from numpy import inf
 
-from ..base import BaseTransformer
+from ..base import BaseTransformer, _get_rng
 
-NOISE_TYPES = ['white',
-              'pink',
-              'brownian']
+NOISE_TYPES = ['white', 'pink', 'brownian']
 
-def noise_generator(y, sr, color, seed):
+
+def noise_generator(y, sr, color, rng):
     '''generating noise given the type of color, length of
        the degrading audio clip and its sampling rate.
 
@@ -28,6 +26,9 @@ def noise_generator(y, sr, color, seed):
     color : str
         keywords of desired noise color
 
+    rng : np.random.RandomState
+        The random state object
+
     Returns
     -------
     y : np.ndarray [shape=(n_samples,)]
@@ -37,20 +38,21 @@ def noise_generator(y, sr, color, seed):
     '''
     n_frames = len(y)
 
-    if seed:
-        np.random.seed(True)
-    noise_white = np.random.randn(n_frames)
+    noise_white = rng.randn(n_frames)
 
     noise_fft = np.fft.rfft(noise_white)
 
+    values = np.linspace(1, n_frames * 0.5 + 1, n_frames//2 + 1)
+
     if color == 'pink':
-        colored_filter = np.sqrt(np.linspace(1, n_frames/2 + 1, n_frames/2 + 1))**(-1)
+        colored_filter = values**(-0.5)
 
     elif color == 'brownian':
-        colored_filter = np.linspace(1, n_frames/2 + 1, n_frames/2 + 1)**(-1)
+        colored_filter = values**(-1)
 
     else:
-        colored_filter = np.linspace(1, n_frames/2 + 1, n_frames/2 + 1)**0 #default white
+        # default white
+        colored_filter = np.linspace(1, n_frames/2 + 1, n_frames//2 + 1)**0
 
     noise_filtered = noise_fft * colored_filter
 
@@ -64,7 +66,8 @@ class ColoredNoise(BaseTransformer):
     noise given the desired type and the length of clip data for degrading
     '''
 
-    def __init__(self, n_samples, color=None, weight_min=0.1, weight_max=0.5, seed = None ):
+    def __init__(self, n_samples, color=None, weight_min=0.1, weight_max=0.5,
+                 rng=None):
 
         if n_samples <= 0:
             raise ValueError('n_samples must be strictly positive')
@@ -78,31 +81,28 @@ class ColoredNoise(BaseTransformer):
         self.color = color
         self.weight_min = weight_min
         self.weight_max = weight_max
-        self.seed = seed
+        self.rng = _get_rng(rng)
 
     def states(self, jam):
-        mudabox = jam.sandbox.muda
         for _ in range(self.n_samples):
             for type_name in self.color:
                 if type_name not in NOISE_TYPES:
                     raise ValueError("Incorrect color type. Color parameter must from [white, pink, brownian] and be a list strictly")
-                yield dict(colortype = type_name,
-                           weight=np.random.uniform(low=self.weight_min,
-                                                    high=self.weight_max,
-                                                    size=None),
-                            seed = self.seed)
+                yield dict(color=type_name,
+                           weight=self.rng.uniform(low=self.weight_min,
+                                                   high=self.weight_max,
+                                                   size=None))
 
     def audio(self, mudabox, state):
 
         weight = state['weight']
-        colortype = state['colortype']
-        seed = state['seed']
+        color = state['color']
 
-        #Generating the noise data
-        noise = noise_generator(y = mudabox._audio['y'],
-                                sr = mudabox._audio['sr'],
-                                color = colortype,
-                                seed = seed)
+        # Generating the noise data
+        noise = noise_generator(mudabox._audio['y'],
+                                mudabox._audio['sr'],
+                                color,
+                                self.rng)
 
         # Normalize the data
         mudabox._audio['y'] = librosa.util.normalize(mudabox._audio['y'])

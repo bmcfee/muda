@@ -23,7 +23,10 @@ class BaseTransformer(object):
 
         init = cls.__init__
 
-        args, varargs = inspect.getargspec(init)[:2]
+        if six.PY3:
+            args, varargs = inspect.getfullargspec(init)[:2]
+        elif six.PY2:
+            args, varargs = inspect.getargspec(init)[:2]
 
         if varargs is not None:
             raise RuntimeError('BaseTransformer objects cannot have varargs')
@@ -109,6 +112,8 @@ class BaseTransformer(object):
         jam_w.sandbox.muda['history'].append({'transformer': self.__serialize__,
                                               'state': state})
 
+        # TODO: replace these with try-except NotImplementedErrors
+        # this way we can have stubs for audio and metadata
         if hasattr(self, 'audio'):
             self.audio(jam_w.sandbox.muda, state)
 
@@ -392,3 +397,36 @@ def _pprint(params, offset=0, printer=repr):
     # Strip trailing space to avoid nightmare in doctests
     lines = '\n'.join(l.rstrip(' ') for l in lines.split('\n'))
     return lines
+
+
+def _get_rng(random_state):
+    '''Get a random number generator (RandomState) object
+    from a seed or existing state.
+
+    Parameters
+    ----------
+    random_state : None, int, or np.random.RandomState
+        If int, random_state is the seed used by the random number generator;
+
+        If RandomState instance, random_state is the random number generator;
+
+        If None, the random number generator is a copy of the current global
+        random state.
+
+    Returns
+    -------
+    rng : np.random.RandomState
+        The RandomState object
+    '''
+    if random_state is None:
+        state = np.random.get_state()
+        rng = np.random.RandomState()
+        rng.set_state(state)
+    elif isinstance(random_state, int):
+        rng = np.random.RandomState(seed=random_state)
+    elif isinstance(random_state, np.random.RandomState):
+        rng = random_state
+    else:
+        raise ValueError('Invalid random_state={}'.format(random_state))
+
+    return rng

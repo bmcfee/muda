@@ -5,9 +5,8 @@
 
 import pyrubberband as pyrb
 import numpy as np
-import pandas as pd
 
-from ..base import BaseTransformer
+from ..base import BaseTransformer, _get_rng
 
 __all__ = ['TimeStretch',
            'RandomTimeStretch',
@@ -184,13 +183,20 @@ class RandomTimeStretch(AbstractTimeStretch):
         Parameters of a log-normal distribution from which
         rate parameters are sampled.
 
+    rng : None, int, or np.random.RandomState
+        The random number generator state.
+
+        If `None`, then `np.random` is used.
+
+        If `int`, then `rng` becomes the seed for the random state.
+
     See Also
     --------
     TimeStretch
     LogspaceTimeStretch
     numpy.random.lognormal
     '''
-    def __init__(self, n_samples=3, location=0.0, scale=1.0e-1):
+    def __init__(self, n_samples=3, location=0.0, scale=1.0e-1, rng=None):
 
         AbstractTimeStretch.__init__(self)
 
@@ -203,11 +209,12 @@ class RandomTimeStretch(AbstractTimeStretch):
         self.n_samples = n_samples
         self.location = location
         self.scale = scale
+        self.rng = _get_rng(rng)
 
     def states(self, jam):
-        rates = np.random.lognormal(mean=self.location,
-                                    sigma=self.scale,
-                                    size=self.n_samples)
+        rates = self.rng.lognormal(mean=self.location,
+                                   sigma=self.scale,
+                                   size=self.n_samples)
 
         for rate in rates:
             yield dict(rate=rate)

@@ -10,7 +10,7 @@ import numpy as np
 import six
 from copy import deepcopy
 
-from ..base import BaseTransformer
+from ..base import BaseTransformer, _get_rng
 
 __all__ = ['PitchShift', 'RandomPitchShift', 'LinearPitchShift']
 
@@ -194,6 +194,13 @@ class RandomPitchShift(AbstractPitchShift):
         The parameters of the normal distribution for sampling
         pitch shifts
 
+    rng : None, int, or np.random.RandomState
+        The random number generator state.
+
+        If `None`, then `np.random` is used.
+
+        If `int`, then `rng` becomes the seed for the random state.
+
     See Also
     --------
     PitchShift
@@ -204,7 +211,7 @@ class RandomPitchShift(AbstractPitchShift):
     >>> # 5 random shifts with unit variance and mean of 1 semitone
     >>> D = muda.deformers.PitchShift(n_samples=5, mean=1.0, sigma=1)
     '''
-    def __init__(self, n_samples=3, mean=0.0, sigma=1.0):
+    def __init__(self, n_samples=3, mean=0.0, sigma=1.0, rng=None):
         AbstractPitchShift.__init__(self)
 
         if sigma <= 0:
@@ -216,14 +223,15 @@ class RandomPitchShift(AbstractPitchShift):
         self.n_samples = n_samples
         self.mean = float(mean)
         self.sigma = float(sigma)
+        self.rng = _get_rng(rng)
 
     def states(self, jam):
         # Sample the deformation
         for state in AbstractPitchShift.states(self, jam):
             for _ in range(self.n_samples):
-                state['n_semitones'] = np.random.normal(loc=self.mean,
-                                                        scale=self.sigma,
-                                                        size=None)
+                state['n_semitones'] = self.rng.normal(loc=self.mean,
+                                                       scale=self.sigma,
+                                                       size=None)
                 yield state
 
 
