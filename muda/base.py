@@ -78,6 +78,12 @@ class BaseTransformer(object):
     def states(self, jam):
         raise NotImplementedError
 
+    def audio(self, mudabox, state):
+        raise NotImplementedError
+
+    def metadata(self, metadata, state):
+        raise NotImplementedError
+
     def _register(self, pattern, function):
         self.dispatch[pattern] = function.__name__
 
@@ -112,13 +118,15 @@ class BaseTransformer(object):
         jam_w.sandbox.muda['history'].append({'transformer': self.__serialize__,
                                               'state': state})
 
-        # TODO: replace these with try-except NotImplementedErrors
-        # this way we can have stubs for audio and metadata
-        if hasattr(self, 'audio'):
+        try:
             self.audio(jam_w.sandbox.muda, state)
+        except NotImplementedError:
+            pass
 
-        if hasattr(self, 'metadata'):
+        try:
             self.metadata(jam_w.file_metadata, state)
+        except NotImplementedError:
+            pass
 
         # Walk over the list of deformers
         for query, function_name in six.iteritems(self.dispatch):
