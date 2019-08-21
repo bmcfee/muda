@@ -9,10 +9,10 @@ import numpy as np
 import os
 import six
 
-from ..base import BaseTransformer
+from ..base import BaseTransformer, _get_rng
 
 
-def sample_clip_indices(filename, n_samples, sr):
+def sample_clip_indices(filename, n_samples, sr, rng):
     '''Calculate the indices at which to sample a fragment of audio from a file.
 
     Parameters
@@ -25,6 +25,9 @@ def sample_clip_indices(filename, n_samples, sr):
 
     sr : int > 0
         The target sampling rate
+
+    rng : np.random.RandomState
+        The random number generator object
 
     Returns
     -------
@@ -44,7 +47,7 @@ def sample_clip_indices(filename, n_samples, sr):
                 ' must be at least the length of the input ({})'.format(n_target))
 
         # Draw a starting point at random in the background waveform
-        start = np.random.randint(0, 1 + len(soundf) - n_target)
+        start = rng.randint(0, 1 + len(soundf) - n_target)
         stop = start + n_target
 
         return start, stop
@@ -131,9 +134,17 @@ class BackgroundNoise(BaseTransformer):
         The minimum and maximum weight to combine input signals
 
         `y_out = (1 - weight) * y + weight * y_noise`
+
+    rng : None, int, or np.random.RandomState
+        The random number generator object or seed.
+
+        If None, `np.random` is used.
+
+        If int-typed, the `rng` value is used as a seed for the random number
+        generator.
     '''
 
-    def __init__(self, n_samples=1, files=None, weight_min=0.1, weight_max=0.5):
+    def __init__(self, n_samples=1, files=None, weight_min=0.1, weight_max=0.5, rng=None):
         if n_samples <= 0:
             raise ValueError('n_samples must be strictly positive')
 
@@ -153,16 +164,20 @@ class BackgroundNoise(BaseTransformer):
         self.files = files
         self.weight_min = weight_min
         self.weight_max = weight_max
+        self.rng = _get_rng(rng)
 
     def states(self, jam):
         mudabox = jam.sandbox.muda
         for fname in self.files:
             for _ in range(self.n_samples):
-                start, stop = sample_clip_indices(fname, len(mudabox._audio['y']), mudabox._audio['sr'])
+                start, stop = sample_clip_indices(fname,
+                                                  len(mudabox._audio['y']),
+                                                  mudabox._audio['sr'],
+                                                  self.rng)
                 yield dict(filename=fname,
-                           weight=np.random.uniform(low=self.weight_min,
-                                                    high=self.weight_max,
-                                                    size=None),
+                           weight=self.rng.uniform(low=self.weight_min,
+                                                   high=self.weight_max,
+                                                   size=None),
                            start=start,
                            stop=stop)
 
