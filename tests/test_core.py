@@ -146,3 +146,33 @@ def test_reload_jampack(jam_in, audio_file):
     jam2 = muda.load_jam_audio(six.StringIO(jam.dumps()), audio_file)
     assert isinstance(jam.sandbox.muda, jams.Sandbox)
     assert isinstance(jam2.sandbox.muda, jams.Sandbox)
+
+
+def test_replay(jam_in, audio_file):
+
+    T = muda.deformers.LogspaceTimeStretch()
+    S = muda.deformers.PitchShift(n_semitones=1)
+    P = muda.Pipeline([('time', T), ('pitch', S)])
+
+    # Load in the jam and transform it
+    jam_1 = muda.load_jam_audio(jam_in, audio_file)
+    jam_muda = next(P.transform(jam_1))
+
+    # Load a fresh copy of the jam
+    jam_2 = muda.load_jam_audio(jam_in, audio_file)
+
+    # Pop the audio container out of the jam2 sandbox
+    _audio = jam_muda.sandbox.muda._audio
+
+    jam_new = muda.replay(jam_muda, jam_2)
+
+    # 1: check all annotations
+    for a1, a2 in zip(jam_muda.annotations, jam_new.annotations):
+        assert a1 == a2
+
+    # 2: check audio
+    assert np.allclose(_audio['y'], jam_new.sandbox.muda._audio['y'])
+    assert _audio['sr'] == jam_new.sandbox.muda._audio['sr']
+
+    # Verify that the objects are in fact distinct
+    assert jam_muda is not jam_new
