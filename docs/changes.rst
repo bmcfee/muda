@@ -3,6 +3,23 @@
 Release notes
 =============
 
+v0.3.0
+------
+
+* `#71`_ `muda.replay()` to regenerate audio deformation from JAMS. *Brian McFee*
+* `#70`_ Support random seed preservation. *Brian McFee*
+* `#69`_ Support deformation of audio with no annotation. *Brian McFee*
+* `#68`_ Pitch_hz namespace deprecation support. *Frank Cwitkowitz*
+* `#67`_ Colored noise and impulse response deformers. *Chuy Yeliuy*
+
+.. _#67: https://github.com/bmcfee/muda/pull/67
+.. _#68: https://github.com/bmcfee/muda/pull/68
+.. _#69: https://github.com/bmcfee/muda/pull/69
+.. _#70: https://github.com/bmcfee/muda/pull/70
+.. _#71: https://github.com/bmcfee/muda/pull/71
+
+
+
 v0.2.0
 ------
 * `#61`_ Exposed JAMS input-output arguments in `load_jam_audio` and `save`.
