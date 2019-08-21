@@ -43,11 +43,12 @@ def jam_in():
     return 'tests/data/fixture.jams'
 
 
-@pytest.fixture(params=[0, 1, 2, 3],
+@pytest.fixture(params=[0, 1, 2, 3, 4],
                 ids=['JAMS()',
                      'fixture.jams',
                      "JAMS('fixture.jams')",
-                     'fdesc'])
+                     'fdesc',
+                     'None'])
 def jam_loader(request):
     if request.param == 0:
         yield jams.JAMS()
@@ -58,9 +59,11 @@ def jam_loader(request):
     elif request.param == 2:
         yield jams.load('tests/data/fixture.jams')
 
-    else:
+    elif request.param == 3:
         with open('tests/data/fixture.jams', 'r') as fdesc:
             yield fdesc
+    else:
+        yield None
 
 
 @pytest.mark.parametrize('validate', [False, True])

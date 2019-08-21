@@ -74,9 +74,11 @@ def load_jam_audio(jam_in, audio_file,
 
     Parameters
     ----------
-    jam_in : str, file descriptor, or jams.JAMS
+    jam_in : str, file descriptor, jams.JAMS, or None
         JAMS filename, open file-descriptor, or object to load.
         See ``jams.load`` for acceptable formats.
+
+        If `None` is provided, an empty JAMS object is constructed.
 
     audio_file : str
         Audio filename to load
@@ -104,10 +106,26 @@ def load_jam_audio(jam_in, audio_file,
     --------
     jams.load
     librosa.core.load
+
+
+    Examples
+    --------
+
+    Load a JAMS object and audio from disk
+
+    >>> jam = muda.load_jam_audio('my_file.jams', 'my_file.wav')
+
+
+    Load an audio file with no jams annotation
+
+    >>> jam = muda.load_jam_audio(None, 'my_file.wav')
+
     '''
 
     if isinstance(jam_in, jams.JAMS):
         jam = jam_in
+    elif jam_in is None:
+        jam = jams.JAMS()
     else:
         jam = jams.load(jam_in, validate=validate, strict=strict, fmt=fmt)
 
