@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- encoding: utf-8 -*-
 # CREATED:2015-03-03 21:29:49 by Brian McFee <brian.mcfee@nyu.edu>
-'''Additive background noise'''
+"""Additive background noise"""
 
 import soundfile as psf
 import librosa
@@ -13,7 +13,7 @@ from ..base import BaseTransformer, _get_rng
 
 
 def sample_clip_indices(filename, n_samples, sr, rng):
-    '''Calculate the indices at which to sample a fragment of audio from a file.
+    """Calculate the indices at which to sample a fragment of audio from a file.
 
     Parameters
     ----------
@@ -35,16 +35,18 @@ def sample_clip_indices(filename, n_samples, sr, rng):
         The sample index from `filename` at which the audio fragment starts
     stop : int
         The sample index from `filename` at which the audio fragment stops (e.g. y = audio[start:stop])
-    '''
+    """
 
-    with psf.SoundFile(str(filename), mode='r') as soundf:
+    with psf.SoundFile(str(filename), mode="r") as soundf:
         # Measure required length of fragment
         n_target = int(np.ceil(n_samples * soundf.samplerate / float(sr)))
 
         # Raise exception if source is too short
         if len(soundf) < n_target:
-            raise RuntimeError('Source {} (length={})'.format(filename, len(soundf)) +
-                ' must be at least the length of the input ({})'.format(n_target))
+            raise RuntimeError(
+                "Source {} (length={})".format(filename, len(soundf))
+                + " must be at least the length of the input ({})".format(n_target)
+            )
 
         # Draw a starting point at random in the background waveform
         start = rng.randint(0, 1 + len(soundf) - n_target)
@@ -54,7 +56,7 @@ def sample_clip_indices(filename, n_samples, sr, rng):
 
 
 def slice_clip(filename, start, stop, n_samples, sr, mono=True):
-    '''Slice a fragment of audio from a file.
+    """Slice a fragment of audio from a file.
 
     This uses pysoundfile to efficiently seek without
     loading the entire stream.
@@ -89,9 +91,9 @@ def slice_clip(filename, start, stop, n_samples, sr, mono=True):
     ValueError
         If the source file is shorter than the requested length
 
-    '''
+    """
 
-    with psf.SoundFile(str(filename), mode='r') as soundf:
+    with psf.SoundFile(str(filename), mode="r") as soundf:
         n_target = stop - start
 
         soundf.seek(start)
@@ -111,7 +113,7 @@ def slice_clip(filename, start, stop, n_samples, sr, mono=True):
 
 
 class BackgroundNoise(BaseTransformer):
-    '''Additive background noise deformations.
+    """Additive background noise deformations.
 
     From each background noise signal, `n_samples` clips are randomly
     extracted and mixed with the input audio with a random mixing coefficient
@@ -142,21 +144,23 @@ class BackgroundNoise(BaseTransformer):
 
         If int-typed, the `rng` value is used as a seed for the random number
         generator.
-    '''
+    """
 
-    def __init__(self, n_samples=1, files=None, weight_min=0.1, weight_max=0.5, rng=None):
+    def __init__(
+        self, n_samples=1, files=None, weight_min=0.1, weight_max=0.5, rng=None
+    ):
         if n_samples <= 0:
-            raise ValueError('n_samples must be strictly positive')
+            raise ValueError("n_samples must be strictly positive")
 
         if not 0 < weight_min < weight_max < 1.0:
-            raise ValueError('weights must be in the range (0.0, 1.0)')
+            raise ValueError("weights must be in the range (0.0, 1.0)")
 
         if isinstance(files, six.string_types):
             files = [files]
 
         for fname in files:
             if not os.path.exists(fname):
-                raise RuntimeError('file not found: {}'.format(fname))
+                raise RuntimeError("file not found: {}".format(fname))
 
         BaseTransformer.__init__(self)
 
@@ -170,30 +174,35 @@ class BackgroundNoise(BaseTransformer):
         mudabox = jam.sandbox.muda
         for fname in self.files:
             for _ in range(self.n_samples):
-                start, stop = sample_clip_indices(fname,
-                                                  len(mudabox._audio['y']),
-                                                  mudabox._audio['sr'],
-                                                  self.rng)
-                yield dict(filename=fname,
-                           weight=self.rng.uniform(low=self.weight_min,
-                                                   high=self.weight_max,
-                                                   size=None),
-                           start=start,
-                           stop=stop)
+                start, stop = sample_clip_indices(
+                    fname, len(mudabox._audio["y"]), mudabox._audio["sr"], self.rng
+                )
+                yield dict(
+                    filename=fname,
+                    weight=self.rng.uniform(
+                        low=self.weight_min, high=self.weight_max, size=None
+                    ),
+                    start=start,
+                    stop=stop,
+                )
 
     def audio(self, mudabox, state):
-        weight = state['weight']
-        fname = state['filename']
-        start = state['start']
-        stop = state['stop']
+        weight = state["weight"]
+        fname = state["filename"]
+        start = state["start"]
+        stop = state["stop"]
 
-        noise = slice_clip(fname, start, stop, len(mudabox._audio['y']),
-                           mudabox._audio['sr'],
-                           mono=mudabox._audio['y'].ndim == 1)
+        noise = slice_clip(
+            fname,
+            start,
+            stop,
+            len(mudabox._audio["y"]),
+            mudabox._audio["sr"],
+            mono=mudabox._audio["y"].ndim == 1,
+        )
 
         # Normalize the data
-        mudabox._audio['y'] = librosa.util.normalize(mudabox._audio['y'])
+        mudabox._audio["y"] = librosa.util.normalize(mudabox._audio["y"])
         noise = librosa.util.normalize(noise)
 
-        mudabox._audio['y'] = ((1.0 - weight) * mudabox._audio['y'] +
-                               weight * noise)
+        mudabox._audio["y"] = (1.0 - weight) * mudabox._audio["y"] + weight * noise

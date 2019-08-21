@@ -1,71 +1,75 @@
 #!/usr/bin/env python
 # -*- encoding: utf-8 -*-
 # CREATED:2015-02-02 10:09:43 by Brian McFee <brian.mcfee@nyu.edu>
-'''Time stretching deformations'''
+"""Time stretching deformations"""
 
 import pyrubberband as pyrb
 import numpy as np
 
 from ..base import BaseTransformer, _get_rng
 
-__all__ = ['TimeStretch',
-           'RandomTimeStretch',
-           'LogspaceTimeStretch']
+__all__ = ["TimeStretch", "RandomTimeStretch", "LogspaceTimeStretch"]
 
 
 class AbstractTimeStretch(BaseTransformer):
-    '''Abstract base class for time stretching
+    """Abstract base class for time stretching
 
     This contains the deformation functions and
     annotation query mapping, but does not manage
     state or parameters.
-    '''
+    """
 
     def __init__(self):
         BaseTransformer.__init__(self)
 
         # Build the annotation mappers
-        self._register('.*', self.deform_times)
-        self._register('tempo', self.deform_tempo)
+        self._register(".*", self.deform_times)
+        self._register("tempo", self.deform_tempo)
 
     @staticmethod
     def audio(mudabox, state):
         # Deform the audio and metadata
-        mudabox._audio['y'] = pyrb.time_stretch(mudabox._audio['y'],
-                                                mudabox._audio['sr'],
-                                                state['rate'])
+        mudabox._audio["y"] = pyrb.time_stretch(
+            mudabox._audio["y"], mudabox._audio["sr"], state["rate"]
+        )
 
     @staticmethod
     def metadata(metadata, state):
         # Deform the metadata
-        metadata.duration /= state['rate']
+        metadata.duration /= state["rate"]
 
     @staticmethod
     def deform_tempo(annotation, state):
         # Deform a tempo annotation
 
         for obs in annotation.pop_data():
-            annotation.append(time=obs.time, duration=obs.duration,
-                              confidence=obs.confidence,
-                              value=state['rate'] * obs.value)
+            annotation.append(
+                time=obs.time,
+                duration=obs.duration,
+                confidence=obs.confidence,
+                value=state["rate"] * obs.value,
+            )
 
     @staticmethod
     def deform_times(ann, state):
         # Deform time values for all annotations.
 
-        ann.time /= state['rate']
+        ann.time /= state["rate"]
 
         if ann.duration is not None:
-            ann.duration /= state['rate']
+            ann.duration /= state["rate"]
 
         for obs in ann.pop_data():
-            ann.append(time=obs.time / state['rate'],
-                       duration=obs.duration / state['rate'],
-                       value=obs.value, confidence=obs.confidence)
+            ann.append(
+                time=obs.time / state["rate"],
+                duration=obs.duration / state["rate"],
+                value=obs.value,
+                confidence=obs.confidence,
+            )
 
 
 class TimeStretch(AbstractTimeStretch):
-    '''Static time stretching by a fixed rate
+    """Static time stretching by a fixed rate
 
     This transformation affects the following attributes:
 
@@ -93,14 +97,15 @@ class TimeStretch(AbstractTimeStretch):
     --------
     LogspaceTimeStretch
     RandomTimeStretch
-    '''
+    """
+
     def __init__(self, rate=1.2):
-        '''Time stretching'''
+        """Time stretching"""
         AbstractTimeStretch.__init__(self)
 
         self.rate = np.atleast_1d(rate).flatten()
         if np.any(self.rate <= 0):
-            raise ValueError('rate parameter must be strictly positive.')
+            raise ValueError("rate parameter must be strictly positive.")
         self.rate = self.rate.tolist()
 
     def states(self, jam):
@@ -109,7 +114,7 @@ class TimeStretch(AbstractTimeStretch):
 
 
 class LogspaceTimeStretch(AbstractTimeStretch):
-    '''Logarithmically spaced time stretching.
+    """Logarithmically spaced time stretching.
 
     `n_samples` are generated with stretching spaced logarithmically
     between `2.0**lower` and 2`.0**upper`.
@@ -136,32 +141,32 @@ class LogspaceTimeStretch(AbstractTimeStretch):
     --------
     TimeStretch
     RandomTimeStretch
-    '''
+    """
+
     def __init__(self, n_samples=3, lower=-0.3, upper=0.3):
         AbstractTimeStretch.__init__(self)
 
         if upper <= lower:
-            raise ValueError('upper must be strictly larger than lower')
+            raise ValueError("upper must be strictly larger than lower")
 
         if n_samples <= 0:
-            raise ValueError('n_samples must be strictly positive')
+            raise ValueError("n_samples must be strictly positive")
 
         self.n_samples = n_samples
         self.lower = float(lower)
         self.upper = float(upper)
 
     def states(self, jam):
-        rates = 2.0**np.linspace(self.lower,
-                                 self.upper,
-                                 num=self.n_samples,
-                                 endpoint=True)
+        rates = 2.0 ** np.linspace(
+            self.lower, self.upper, num=self.n_samples, endpoint=True
+        )
 
         for rate in rates:
             yield dict(rate=rate)
 
 
 class RandomTimeStretch(AbstractTimeStretch):
-    '''Random time stretching
+    """Random time stretching
 
     For each deformation, the rate parameter is drawn from a
     log-normal distribution with parameters `(location, scale)`
@@ -195,16 +200,17 @@ class RandomTimeStretch(AbstractTimeStretch):
     TimeStretch
     LogspaceTimeStretch
     numpy.random.lognormal
-    '''
+    """
+
     def __init__(self, n_samples=3, location=0.0, scale=1.0e-1, rng=None):
 
         AbstractTimeStretch.__init__(self)
 
         if scale <= 0:
-            raise ValueError('scale parameter must be strictly positive.')
+            raise ValueError("scale parameter must be strictly positive.")
 
         if n_samples <= 0:
-            raise ValueError('n_samples must be strictly positive')
+            raise ValueError("n_samples must be strictly positive")
 
         self.n_samples = n_samples
         self.location = location
@@ -212,9 +218,9 @@ class RandomTimeStretch(AbstractTimeStretch):
         self.rng = _get_rng(rng)
 
     def states(self, jam):
-        rates = self.rng.lognormal(mean=self.location,
-                                   sigma=self.scale,
-                                   size=self.n_samples)
+        rates = self.rng.lognormal(
+            mean=self.location, sigma=self.scale, size=self.n_samples
+        )
 
         for rate in rates:
             yield dict(rate=rate)

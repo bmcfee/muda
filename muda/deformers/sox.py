@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- encoding: utf-8 -*-
 # CREATED:2015-03-25 08:13:01 by Brian McFee <brian.mcfee@nyu.edu>
-'''Sox-based deformations'''
+"""Sox-based deformations"""
 
 import os
 import six
@@ -14,16 +14,16 @@ from pkg_resources import resource_filename
 
 from ..base import BaseTransformer
 
-__all__ = ['DynamicRangeCompression', 'PRESETS']
+__all__ = ["DynamicRangeCompression", "PRESETS"]
 
 # Presets pulled from
 # https://web.archive.org/web/20140828122713/http://forum.doom9.org/showthread.php?t=165807
 # and http://forum.doom9.org/showthread.php?p=779165#post779165
-PRESETS = json.load(open(resource_filename(__name__, 'data/drc_presets.json')))
+PRESETS = json.load(open(resource_filename(__name__, "data/drc_presets.json")))
 
 
 def __sox(y, sr, *args):
-    '''Execute sox
+    """Execute sox
 
     Parameters
     ----------
@@ -40,20 +40,20 @@ def __sox(y, sr, *args):
     -------
     y_out : np.ndarray
         `y` after sox transformation
-    '''
+    """
 
     assert sr > 0
 
-    fdesc, infile = tempfile.mkstemp(suffix='.wav')
+    fdesc, infile = tempfile.mkstemp(suffix=".wav")
     os.close(fdesc)
-    fdesc, outfile = tempfile.mkstemp(suffix='.wav')
+    fdesc, outfile = tempfile.mkstemp(suffix=".wav")
     os.close(fdesc)
 
     # Dump the audio
     librosa.output.write_wav(infile, y, sr)
 
     try:
-        arguments = ['sox', infile, outfile, '-q']
+        arguments = ["sox", infile, outfile, "-q"]
         arguments.extend(args)
 
         subprocess.check_call(arguments)
@@ -71,7 +71,7 @@ def __sox(y, sr, *args):
 
 
 def drc(y, sr, preset):
-    '''Apply a preset DRC
+    """Apply a preset DRC
 
     Parameters
     ----------
@@ -88,13 +88,13 @@ def drc(y, sr, preset):
     -------
     y_out : np.ndarray
         `y` after applying preset DRC
-    '''
+    """
 
-    return __sox(y, sr, 'compand', *PRESETS[preset])
+    return __sox(y, sr, "compand", *PRESETS[preset])
 
 
 class DynamicRangeCompression(BaseTransformer):
-    '''Dynamic range compression.
+    """Dynamic range compression.
 
     For each DRC preset configuration, one deformation is generated.
 
@@ -123,7 +123,7 @@ class DynamicRangeCompression(BaseTransformer):
     ...                                                      'film light'])
     >>> # All presets
     >>> drc = muda.deformers.DynamicRangeCompression(preset=muda.deformers.PRESETS.keys())
-    '''
+    """
 
     def __init__(self, preset=None):
         BaseTransformer.__init__(self)
@@ -143,6 +143,6 @@ class DynamicRangeCompression(BaseTransformer):
 
     @staticmethod
     def audio(mudabox, state):
-        mudabox._audio['y'] = drc(mudabox._audio['y'],
-                                  mudabox._audio['sr'],
-                                  state['preset'])
+        mudabox._audio["y"] = drc(
+            mudabox._audio["y"], mudabox._audio["sr"], state["preset"]
+        )
