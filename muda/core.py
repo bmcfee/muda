@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # CREATED:2015-02-01 19:25:59 by Brian McFee <brian.mcfee@nyu.edu>
-'''Core functionality for muda'''
+"""Core functionality for muda"""
 
 import jams
 import librosa
@@ -13,11 +13,11 @@ import six
 from .version import version
 from . import deformers
 
-__all__ = ['load_jam_audio', 'save', 'jam_pack', 'serialize', 'deserialize', 'replay']
+__all__ = ["load_jam_audio", "save", "jam_pack", "serialize", "deserialize", "replay"]
 
 
 def jam_pack(jam, **kwargs):
-    '''Pack data into a jams sandbox.
+    """Pack data into a jams sandbox.
 
     If not already present, this creates a `muda` field within `jam.sandbox`,
     along with `history`, `state`, and version arrays which are populated by
@@ -46,16 +46,20 @@ def jam_pack(jam, **kwargs):
     <Sandbox: state, version, my_data, history>
     >>> jam.sandbox.muda.my_data
     {'foo': 5, 'bar': None}
-    '''
+    """
 
-    if not hasattr(jam.sandbox, 'muda'):
+    if not hasattr(jam.sandbox, "muda"):
         # If there's no mudabox, create one
-        jam.sandbox.muda = jams.Sandbox(history=[],
-                                        state=[],
-                                        version=dict(muda=version,
-                                                     librosa=librosa.__version__,
-                                                     jams=jams.__version__,
-                                                     pysoundfile=psf.__version__))
+        jam.sandbox.muda = jams.Sandbox(
+            history=[],
+            state=[],
+            version=dict(
+                muda=version,
+                librosa=librosa.__version__,
+                jams=jams.__version__,
+                pysoundfile=psf.__version__,
+            ),
+        )
 
     elif not isinstance(jam.sandbox.muda, jams.Sandbox):
         # If there is a muda entry, but it's not a sandbox, coerce it
@@ -66,12 +70,10 @@ def jam_pack(jam, **kwargs):
     return jam
 
 
-def load_jam_audio(jam_in, audio_file,
-                   validate=True,
-                   strict=True,
-                   fmt='auto',
-                   **kwargs):
-    '''Load a jam and pack it with audio.
+def load_jam_audio(
+    jam_in, audio_file, validate=True, strict=True, fmt="auto", **kwargs
+):
+    """Load a jam and pack it with audio.
 
     Parameters
     ----------
@@ -121,7 +123,7 @@ def load_jam_audio(jam_in, audio_file,
 
     >>> jam = muda.load_jam_audio(None, 'my_file.wav')
 
-    '''
+    """
 
     if isinstance(jam_in, jams.JAMS):
         jam = jam_in
@@ -138,8 +140,8 @@ def load_jam_audio(jam_in, audio_file,
     return jam_pack(jam, _audio=dict(y=y, sr=sr))
 
 
-def save(filename_audio, filename_jam, jam, strict=True, fmt='auto', **kwargs):
-    '''Save a muda jam to disk
+def save(filename_audio, filename_jam, jam, strict=True, fmt="auto", **kwargs):
+    """Save a muda jam to disk
 
     Parameters
     ----------
@@ -157,10 +159,10 @@ def save(filename_audio, filename_jam, jam, strict=True, fmt='auto', **kwargs):
 
     kwargs
         Additional parameters to `soundfile.write`
-    '''
+    """
 
-    y = jam.sandbox.muda._audio['y']
-    sr = jam.sandbox.muda._audio['sr']
+    y = jam.sandbox.muda._audio["y"]
+    sr = jam.sandbox.muda._audio["sr"]
 
     # First, dump the audio file
     psf.write(filename_audio, y, sr, **kwargs)
@@ -170,12 +172,12 @@ def save(filename_audio, filename_jam, jam, strict=True, fmt='auto', **kwargs):
 
 
 def __reconstruct(params):
-    '''Reconstruct a transformation or pipeline given a parameter dump.'''
+    """Reconstruct a transformation or pipeline given a parameter dump."""
 
     if isinstance(params, dict):
-        if '__class__' in params:
-            cls = params['__class__']
-            data = __reconstruct(params['params'])
+        if "__class__" in params:
+            cls = params["__class__"]
+            data = __reconstruct(params["params"])
             return cls(**data)
         else:
             data = dict()
@@ -191,7 +193,7 @@ def __reconstruct(params):
 
 
 def serialize(transform, **kwargs):
-    '''Serialize a transformation object or pipeline.
+    """Serialize a transformation object or pipeline.
 
     Parameters
     ----------
@@ -216,14 +218,14 @@ def serialize(transform, **kwargs):
     >>> muda.serialize(D)
     '{"params": {"rate": 1.5},
       "__class__": {"py/type": "muda.deformers.time.TimeStretch"}}'
-    '''
+    """
 
     params = transform.get_params()
     return jsonpickle.encode(params, **kwargs)
 
 
 def deserialize(encoded, **kwargs):
-    '''Construct a muda transformation from a JSON encoded string.
+    """Construct a muda transformation from a JSON encoded string.
 
     Parameters
     ----------
@@ -249,7 +251,7 @@ def deserialize(encoded, **kwargs):
     >>> D2 = muda.deserialize(D_serial)
     >>> D2
     TimeStretch(rate=1.5)
-    '''
+    """
 
     params = jsonpickle.decode(encoded, **kwargs)
 
@@ -257,7 +259,7 @@ def deserialize(encoded, **kwargs):
 
 
 def replay(jam_muda, jam_new):
-    '''Re-apply the deformation history from one MUDA output on a new
+    """Re-apply the deformation history from one MUDA output on a new
     JAMS object.
 
     This is primarily useful when reconstructing the deformed audio from
@@ -292,15 +294,15 @@ def replay(jam_muda, jam_new):
     >>> jam_new = muda.load_jam_audio('my_file.jams', 'my_file.wav')
     >>> jam_out = muda.replay(jam_muda, jam_new)
     >>> # jam_out now contains the deformed audio matching jam_muda
-    '''
+    """
 
     jam_re = jam_new
 
     for step in jam_muda.sandbox.muda.history:
-        defclass = step['transformer']['__class__']
-        params = step['transformer']['params']
+        defclass = step["transformer"]["__class__"]
+        params = step["transformer"]["params"]
         deformer = getattr(deformers, defclass)(**params)
-        state = step['state']
+        state = step["state"]
         jam_re = deformer._transform(jam_re, state)
 
     return jam_re

@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-'''Base module components.'''
+"""Base module components."""
 
 import numpy as np
 import copy
@@ -8,18 +8,18 @@ import itertools
 import six
 import inspect
 
-__all__ = ['BaseTransformer', 'Pipeline', 'Union']
+__all__ = ["BaseTransformer", "Pipeline", "Union"]
 
 
 class BaseTransformer(object):
-    '''The base class for all transformation objects.
+    """The base class for all transformation objects.
     This class implements a single transformation (history)
-    and some various niceties.'''
+    and some various niceties."""
 
     # This bit gleefully stolen from sklearn.base
     @classmethod
     def _get_param_names(cls):
-        '''Get the list of parameter names for the object'''
+        """Get the list of parameter names for the object"""
 
         init = cls.__init__
 
@@ -29,14 +29,14 @@ class BaseTransformer(object):
             args, varargs = inspect.getargspec(init)[:2]
 
         if varargs is not None:
-            raise RuntimeError('BaseTransformer objects cannot have varargs')
+            raise RuntimeError("BaseTransformer objects cannot have varargs")
 
         args.pop(0)
         args.sort()
         return args
 
     def get_params(self, deep=True):
-        '''Get the parameters for this object.  Returns as a dict.
+        """Get the parameters for this object.  Returns as a dict.
 
         Parameters
         ----------
@@ -47,30 +47,30 @@ class BaseTransformer(object):
         -------
         params : dict
             A dictionary containing all parameters for this object
-        '''
+        """
 
-        out = dict(__class__=self.__class__,
-                   params=dict())
+        out = dict(__class__=self.__class__, params=dict())
 
         for key in self._get_param_names():
             value = getattr(self, key, None)
 
-            if deep and hasattr(value, 'get_params'):
+            if deep and hasattr(value, "get_params"):
                 deep_items = value.get_params().items()
-                out['params'][key] = dict(__class__=value.__class__)
-                out['params'][key].update((k, val) for k, val in deep_items)
+                out["params"][key] = dict(__class__=value.__class__)
+                out["params"][key].update((k, val) for k, val in deep_items)
             else:
-                out['params'][key] = value
+                out["params"][key] = value
 
         return out
 
     def __repr__(self):
-        '''Pretty-print this object'''
+        """Pretty-print this object"""
 
         class_name = self.__class__.__name__
-        return '{:s}({:s})'.format(class_name,
-                                   _pprint(self.get_params(deep=False)['params'],
-                                           offset=len(class_name),),)
+        return "{:s}({:s})".format(
+            class_name,
+            _pprint(self.get_params(deep=False)["params"], offset=len(class_name)),
+        )
 
     def __init__(self):
         self.dispatch = OrderedDict()
@@ -88,7 +88,7 @@ class BaseTransformer(object):
         self.dispatch[pattern] = function.__name__
 
     def _transform(self, jam, state):
-        '''Apply the transformation to audio and annotations.
+        """Apply the transformation to audio and annotations.
 
         The input jam is copied and modified, and returned
         contained in a list.
@@ -106,17 +106,18 @@ class BaseTransformer(object):
         See also
         --------
         core.load_jam_audio
-        '''
+        """
 
-        if not hasattr(jam.sandbox, 'muda'):
-            raise RuntimeError('No muda state found in jams sandbox.')
+        if not hasattr(jam.sandbox, "muda"):
+            raise RuntimeError("No muda state found in jams sandbox.")
 
         # We'll need a working copy of this object for modification purposes
         jam_w = copy.deepcopy(jam)
 
         # Push our reconstructor onto the history stack
-        jam_w.sandbox.muda['history'].append({'transformer': self.__serialize__,
-                                              'state': state})
+        jam_w.sandbox.muda["history"].append(
+            {"transformer": self.__serialize__, "state": state}
+        )
 
         try:
             self.audio(jam_w.sandbox.muda, state)
@@ -137,7 +138,7 @@ class BaseTransformer(object):
         return jam_w
 
     def transform(self, jam):
-        '''Iterative transformation generator
+        """Iterative transformation generator
 
         Applies the deformation to an input jams object.
 
@@ -152,22 +153,22 @@ class BaseTransformer(object):
         --------
         >>> for jam_out in deformer.transform(jam_in):
         ...     process(jam_out)
-        '''
+        """
 
         for state in self.states(jam):
             yield self._transform(jam, state)
 
     @property
     def __serialize__(self):
-        '''Serializer'''
+        """Serializer"""
 
         data = self.get_params()
-        data['__class__'] = data['__class__'].__name__
+        data["__class__"] = data["__class__"].__name__
         return data
 
 
 class Pipeline(object):
-    '''Wrapper which allows multiple BaseDeformer objects to be chained together
+    """Wrapper which allows multiple BaseDeformer objects to be chained together
 
     A given JAMS object will be transformed sequentially by
     each stage of the pipeline.
@@ -189,45 +190,44 @@ class Pipeline(object):
     See Also
     --------
     Union
-    '''
+    """
 
     def __init__(self, steps=None):
 
         names, transformers = zip(*steps)
 
         if len(set(names)) != len(steps):
-            raise ValueError("Names provided are not unique: "
-                             " {}".format(names,))
+            raise ValueError("Names provided are not unique: " " {}".format(names))
 
         # shallow copy of steps
         self.steps = list(zip(names, transformers))
 
         for t in transformers:
             if not isinstance(t, BaseTransformer):
-                raise TypeError('{:s} is not a BaseTransformer'.format(t))
+                raise TypeError("{:s} is not a BaseTransformer".format(t))
 
     def get_params(self):
-        '''Get the parameters for this object.  Returns as a dict.'''
+        """Get the parameters for this object.  Returns as a dict."""
 
         out = {}
-        out['__class__'] = self.__class__
-        out['params'] = dict(steps=[])
+        out["__class__"] = self.__class__
+        out["params"] = dict(steps=[])
 
         for name, step in self.steps:
-            out['params']['steps'].append([name, step.get_params(deep=True)])
+            out["params"]["steps"].append([name, step.get_params(deep=True)])
 
         return out
 
     def __repr__(self):
-        '''Pretty-print the object'''
+        """Pretty-print the object"""
 
         class_name = self.__class__.__name__
-        return '{:s}({:s})'.format(class_name,
-                                   _pprint(self.get_params(),
-                                           offset=len(class_name),),)
+        return "{:s}({:s})".format(
+            class_name, _pprint(self.get_params(), offset=len(class_name))
+        )
 
     def __recursive_transform(self, jam, steps):
-        '''A recursive transformation pipeline'''
+        """A recursive transformation pipeline"""
 
         if len(steps) > 0:
             head_transformer = steps[0][1]
@@ -238,7 +238,7 @@ class Pipeline(object):
             yield jam
 
     def transform(self, jam):
-        '''Apply the sequence of transformations to a single jam object.
+        """Apply the sequence of transformations to a single jam object.
 
         Parameters
         ----------
@@ -249,14 +249,14 @@ class Pipeline(object):
         ------
         jam_out : jams.JAMS
             The jam objects produced by the transformation sequence
-        '''
+        """
 
         for output in self.__recursive_transform(jam, self.steps):
             yield output
 
 
 class Union(object):
-    '''Wrapper which allows multiple BaseDeformer objects to be combined
+    """Wrapper which allows multiple BaseDeformer objects to be combined
     for round-robin sampling.
 
     A given JAMS object will be transformed sequentially by
@@ -279,55 +279,55 @@ class Union(object):
     See Also
     --------
     Pipeline
-    '''
+    """
 
     def __init__(self, steps=None):
 
         names, transformers = zip(*steps)
 
         if len(set(names)) != len(steps):
-            raise ValueError("Names provided are not unique: "
-                             " {}".format(names,))
+            raise ValueError("Names provided are not unique: " " {}".format(names))
 
         # shallow copy of steps
         self.steps = list(zip(names, transformers))
 
         for t in transformers:
             if not isinstance(t, BaseTransformer):
-                raise TypeError('{:s} is not a BaseTransformer'.format(t))
+                raise TypeError("{:s} is not a BaseTransformer".format(t))
 
     def get_params(self):
-        '''Get the parameters for this object.  Returns as a dict.'''
+        """Get the parameters for this object.  Returns as a dict."""
 
         out = {}
-        out['__class__'] = self.__class__
-        out['params'] = dict(steps=[])
+        out["__class__"] = self.__class__
+        out["params"] = dict(steps=[])
 
         for name, step in self.steps:
-            out['params']['steps'].append([name, step.get_params(deep=True)])
+            out["params"]["steps"].append([name, step.get_params(deep=True)])
 
         return out
 
     def __repr__(self):
-        '''Pretty-print the object'''
+        """Pretty-print the object"""
 
         class_name = self.__class__.__name__
-        return '{:s}({:s})'.format(class_name,
-                                   _pprint(self.get_params(),
-                                           offset=len(class_name),),)
+        return "{:s}({:s})".format(
+            class_name, _pprint(self.get_params(), offset=len(class_name))
+        )
 
     def __serial_transform(self, jam, steps):
-        '''A serial transformation union'''
+        """A serial transformation union"""
         # This uses the round-robin itertools recipe
 
         if six.PY2:
-            attr = 'next'
+            attr = "next"
         else:
-            attr = '__next__'
+            attr = "__next__"
 
         pending = len(steps)
-        nexts = itertools.cycle(getattr(iter(D.transform(jam)), attr)
-                                for (name, D) in steps)
+        nexts = itertools.cycle(
+            getattr(iter(D.transform(jam)), attr) for (name, D) in steps
+        )
 
         while pending:
             try:
@@ -338,7 +338,7 @@ class Union(object):
                 nexts = itertools.cycle(itertools.islice(nexts, pending))
 
     def transform(self, jam):
-        '''Apply the sequence of transformations to a single jam object.
+        """Apply the sequence of transformations to a single jam object.
 
         Parameters
         ----------
@@ -349,7 +349,7 @@ class Union(object):
         ------
         jam_out : jams.JAMS
             The jam objects produced by each member of the union
-        '''
+        """
 
         for output in self.__serial_transform(jam, self.steps):
             yield output
@@ -378,37 +378,37 @@ def _pprint(params, offset=0, printer=repr):
     np.set_printoptions(precision=5, threshold=64, edgeitems=2)
     params_list = list()
     this_line_length = offset
-    line_sep = ',\n' + (1 + offset // 2) * ' '
+    line_sep = ",\n" + (1 + offset // 2) * " "
     for i, (k, v) in enumerate(sorted(six.iteritems(params))):
         if type(v) is float:
             # use str for representing floating point numbers
             # this way we get consistent representation across
             # architectures and versions.
-            this_repr = '%s=%s' % (k, str(v))
+            this_repr = "%s=%s" % (k, str(v))
         else:
             # use repr of the rest
-            this_repr = '%s=%s' % (k, printer(v))
+            this_repr = "%s=%s" % (k, printer(v))
         if len(this_repr) > 500:
-            this_repr = this_repr[:300] + '...' + this_repr[-100:]
+            this_repr = this_repr[:300] + "..." + this_repr[-100:]
         if i > 0:
-            if (this_line_length + len(this_repr) >= 75 or '\n' in this_repr):
+            if this_line_length + len(this_repr) >= 75 or "\n" in this_repr:
                 params_list.append(line_sep)
                 this_line_length = len(line_sep)
             else:
-                params_list.append(', ')
+                params_list.append(", ")
                 this_line_length += 2
         params_list.append(this_repr)
         this_line_length += len(this_repr)
 
     np.set_printoptions(**options)
-    lines = ''.join(params_list)
+    lines = "".join(params_list)
     # Strip trailing space to avoid nightmare in doctests
-    lines = '\n'.join(l.rstrip(' ') for l in lines.split('\n'))
+    lines = "\n".join(l.rstrip(" ") for l in lines.split("\n"))
     return lines
 
 
 def _get_rng(random_state):
-    '''Get a random number generator (RandomState) object
+    """Get a random number generator (RandomState) object
     from a seed or existing state.
 
     Parameters
@@ -425,7 +425,7 @@ def _get_rng(random_state):
     -------
     rng : np.random.RandomState
         The RandomState object
-    '''
+    """
     if random_state is None:
         state = np.random.get_state()
         rng = np.random.RandomState()
@@ -435,6 +435,6 @@ def _get_rng(random_state):
     elif isinstance(random_state, np.random.RandomState):
         rng = random_state
     else:
-        raise ValueError('Invalid random_state={}'.format(random_state))
+        raise ValueError("Invalid random_state={}".format(random_state))
 
     return rng
