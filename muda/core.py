@@ -11,8 +11,9 @@ import jsonpickle
 import six
 
 from .version import version
+from . import deformers
 
-__all__ = ['load_jam_audio', 'save', 'jam_pack', 'serialize', 'deserialize']
+__all__ = ['load_jam_audio', 'save', 'jam_pack', 'serialize', 'deserialize', 'replay']
 
 
 def jam_pack(jam, **kwargs):
@@ -253,3 +254,53 @@ def deserialize(encoded, **kwargs):
     params = jsonpickle.decode(encoded, **kwargs)
 
     return __reconstruct(params)
+
+
+def replay(jam_muda, jam_new):
+    '''Re-apply the deformation history from one MUDA output on a new
+    JAMS object.
+
+    This is primarily useful when reconstructing the deformed audio from
+    running MUDA when only the original audio and the deformed annotation (JAMS)
+    are given.
+
+    Parameters
+    ----------
+    jam_muda : jams.JAMS
+        The JAMS object produced from a previous run of MUDA.
+
+    jam_new : jams.JAMS
+        The JAMS object on which to replay the deformation history.
+
+        .. note:: This should be produced by `jam_pack` or `load_jam_audio`,
+                  and contain the original audio.
+
+    Returns
+    -------
+    jam_replay : jams.JAMS
+        The result of applying `jam_muda`'s deformation history to `jam_new`.
+
+    Examples
+    --------
+
+    Shift an example by one semitone, and then replay that transformation
+
+    >>> jam = muda.load_jam_audio('my_file.jams', 'my_file.wav')
+    >>> pitch = muda.deformers.PitchShift(n_semitones=+1)
+    >>> jam_muda = next(pitch.transform(jam))
+    >>> # Some time later, replay that transformation just from jam_muda
+    >>> jam_new = muda.load_jam_audio('my_file.jams', 'my_file.wav')
+    >>> jam_out = muda.replay(jam_muda, jam_new)
+    >>> # jam_out now contains the deformed audio matching jam_muda
+    '''
+
+    jam_re = jam_new
+
+    for step in jam_muda.sandbox.muda.history:
+        defclass = step['transformer']['__class__']
+        params = step['transformer']['params']
+        deformer = getattr(deformers, defclass)(**params)
+        state = step['state']
+        jam_re = deformer._transform(jam_re, state)
+
+    return jam_re
