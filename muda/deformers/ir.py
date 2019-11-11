@@ -121,7 +121,6 @@ class IRConvolution(BaseTransformer):
         for fname in self.ir_files:
             # load and resample ir
             y_ir, sr_ir = librosa.load(fname, sr=mudabox._audio["sr"])
-            # y_ir = np.pad(y_ir,(sr_ir,0),mode = 'constant') #This is the test of a delayed impulse response
             estimated_group_delay = median_group_delay(
                 y=y_ir, sr=sr_ir, n_fft=self.n_fft, rolloff_value=self.rolloff_value
             )
@@ -133,13 +132,6 @@ class IRConvolution(BaseTransformer):
 
         y_ir, sr_ir = librosa.load(fname, sr=mudabox._audio["sr"])
 
-        # If the input signal isn't big enough, pad it out first
-        n = len(mudabox._audio["y"])
-        if n < len(y_ir):
-            mudabox._audio["y"] = librosa.util.fix_length(
-                mudabox._audio["y"], len(y_ir)
-            )
-
-        mudabox._audio["y"] = scipy.signal.fftconvolve(
-            mudabox._audio["y"], y_ir, mode="same"
+        mudabox._audio["y"] = scipy.signal.convolve(
+            mudabox._audio["y"], y_ir, mode="full"
         )
