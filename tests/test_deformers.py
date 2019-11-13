@@ -89,6 +89,8 @@ def __test_params(D1, D2):
     # Make sure that all parameters are preserved
     assert p1 == p2
 
+    r1 = muda.base._get_rng(r1)
+    r2 = muda.base._get_rng(r2)
     # Comparing random states is a pain
     if r1 is not None or r2 is not None:
         for (v1, v2) in zip(r1.get_state(), r2.get_state()):

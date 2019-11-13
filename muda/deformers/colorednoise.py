@@ -80,7 +80,8 @@ class ColoredNoise(BaseTransformer):
         self.color = color
         self.weight_min = weight_min
         self.weight_max = weight_max
-        self.rng = _get_rng(rng)
+        self.rng = rng
+        self._rng = _get_rng(rng)
 
     def states(self, jam):
         for _ in range(self.n_samples):
@@ -91,7 +92,7 @@ class ColoredNoise(BaseTransformer):
                     )
                 yield dict(
                     color=type_name,
-                    weight=self.rng.uniform(
+                    weight=self._rng.uniform(
                         low=self.weight_min, high=self.weight_max, size=None
                     ),
                 )
@@ -103,7 +104,7 @@ class ColoredNoise(BaseTransformer):
 
         # Generating the noise data
         noise = noise_generator(
-            mudabox._audio["y"], mudabox._audio["sr"], color, self.rng
+            mudabox._audio["y"], mudabox._audio["sr"], color, self._rng
         )
 
         # Normalize the data

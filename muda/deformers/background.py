@@ -168,18 +168,19 @@ class BackgroundNoise(BaseTransformer):
         self.files = files
         self.weight_min = weight_min
         self.weight_max = weight_max
-        self.rng = _get_rng(rng)
+        self.rng = rng
+        self._rng = _get_rng(rng)
 
     def states(self, jam):
         mudabox = jam.sandbox.muda
         for fname in self.files:
             for _ in range(self.n_samples):
                 start, stop = sample_clip_indices(
-                    fname, len(mudabox._audio["y"]), mudabox._audio["sr"], self.rng
+                    fname, len(mudabox._audio["y"]), mudabox._audio["sr"], self._rng
                 )
                 yield dict(
                     filename=fname,
-                    weight=self.rng.uniform(
+                    weight=self._rng.uniform(
                         low=self.weight_min, high=self.weight_max, size=None
                     ),
                     start=start,

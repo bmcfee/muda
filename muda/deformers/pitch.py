@@ -246,13 +246,14 @@ class RandomPitchShift(AbstractPitchShift):
         self.n_samples = n_samples
         self.mean = float(mean)
         self.sigma = float(sigma)
-        self.rng = _get_rng(rng)
+        self.rng = rng
+        self._rng = _get_rng(rng)
 
     def states(self, jam):
         # Sample the deformation
         for state in AbstractPitchShift.states(self, jam):
             for _ in range(self.n_samples):
-                state["n_semitones"] = self.rng.normal(
+                state["n_semitones"] = self._rng.normal(
                     loc=self.mean, scale=self.sigma, size=None
                 )
                 yield state
