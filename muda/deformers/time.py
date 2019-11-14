@@ -215,10 +215,11 @@ class RandomTimeStretch(AbstractTimeStretch):
         self.n_samples = n_samples
         self.location = location
         self.scale = scale
-        self.rng = _get_rng(rng)
+        self.rng = rng
+        self._rng = _get_rng(rng)
 
     def states(self, jam):
-        rates = self.rng.lognormal(
+        rates = self._rng.lognormal(
             mean=self.location, sigma=self.scale, size=self.n_samples
         )
 
