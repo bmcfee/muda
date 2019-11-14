@@ -50,7 +50,7 @@ def __sox(y, sr, *args):
     os.close(fdesc)
 
     # Dump the audio
-    librosa.output.write_wav(infile, y, sr)
+    psf.write(infile, y, sr)
 
     try:
         arguments = ["sox", infile, outfile, "-q"]
@@ -146,3 +146,4 @@ class DynamicRangeCompression(BaseTransformer):
         mudabox._audio["y"] = drc(
             mudabox._audio["y"], mudabox._audio["sr"], state["preset"]
         )
+
