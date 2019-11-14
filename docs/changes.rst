@@ -6,12 +6,14 @@ Release notes
 v0.4.0
 ------
 
+* `#73`_ Fixed a bug in impulse response deformations.  *Brian McFee*
 * `#74`_ Fixed serialization of JAMS objects when using randomized deformations.  *Brian McFee*
 * `#76`_ Future-proofed wavefile IO against upcoming librosa deprecations. *Brian
   McFee*
 
 .. _#76: https://github.com/bmcfee/muda/pull/76
 .. _#74: https://github.com/bmcfee/muda/pull/74
+.. _#73: https://github.com/bmcfee/muda/pull/73
 
 v0.3.0
 ------
