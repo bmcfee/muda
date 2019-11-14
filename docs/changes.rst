@@ -3,6 +3,16 @@
 Release notes
 =============
 
+v0.4.0
+------
+
+* `#74`_ Fixed serialization of JAMS objects when using randomized deformations.  *Brian McFee*
+* `#76`_ Future-proofed wavefile IO against upcoming librosa deprecations. *Brian
+  McFee*
+
+.. _#76: https://github.com/bmcfee/muda/pull/76
+.. _#74: https://github.com/bmcfee/muda/pull/74
+
 v0.3.0
 ------
 
