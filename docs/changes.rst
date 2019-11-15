@@ -3,6 +3,13 @@
 Release notes
 =============
 
+v0.4.1
+------
+* `#78`_ Fixed a bug in impulse response deformations for annotation metadata. *Brian McFee*
+
+.. _#78: https://github.com/bmcfee/muda/pull/78
+
+
 v0.4.0
 ------
 
