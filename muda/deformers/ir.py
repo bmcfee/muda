@@ -90,27 +90,23 @@ class IRConvolution(BaseTransformer):
         self._register(".*", self.deform_times)
 
     @staticmethod
+    def metadata(metadata, state):
+        # Extend the annotation time
+        metadata.duration += state['ir_groupdelay']
+
+    @staticmethod
     def deform_times(annotation, state):
         # Deform time values for all annotations.
 
-        ir_groupdelay = state["ir_groupdelay"]
+        # Extend the observation duration by the estimated delay
+        if annotation.duration is not None:
+            annotation.duration += state['ir_groupdelay']
 
+        # Shift all observations forward in time
         for obs in annotation.pop_data():
-            # Drop obervation that fell off the end
-
-            if obs.time + ir_groupdelay > annotation.duration:
-                # Drop the annotation if its delayed onset out of the range of duration
-                annotation = annotation.slice(0, annotation.duration, strict=False)
-            else:
-                # truncate observation's duration if its offset fell off the end of annotation
-                if obs.time + obs.duration + ir_groupdelay > annotation.duration:
-                    deformed_duration = annotation.duration - obs.time - ir_groupdelay
-                else:
-                    deformed_duration = obs.duration
-
             annotation.append(
-                time=obs.time + ir_groupdelay,
-                duration=deformed_duration,
+                time=obs.time + state['ir_groupdelay'],
+                duration=obs.duration,
                 value=obs.value,
                 confidence=obs.confidence,
             )
