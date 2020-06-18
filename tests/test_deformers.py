@@ -15,6 +15,12 @@ import muda
 import pytest
 import scipy
 
+from contextlib import contextmanager
+
+@contextmanager
+def does_not_raise():
+    yield
+
 
 def ap_(a, b, msg=None, rtol=1e-5, atol=1e-5):
     """Shorthand for 'assert np.allclose(a, b, rtol, atol), "%r != %r" % (a, b)
@@ -23,6 +29,7 @@ def ap_(a, b, msg=None, rtol=1e-5, atol=1e-5):
         raise AssertionError(msg or "{} != {}".format(a, b))
 
 
+""" Input JAMS object fixture for multiple tests """
 @pytest.fixture(scope='module')
 def jam_fixture():
     return muda.load_jam_audio('tests/data/fixture.jams',
@@ -41,6 +48,7 @@ def test_raw(jam_raw):
     six.next(D.transform(jam_raw))
 
 
+""" Helper functions -- used across deformers """
 def __test_time(jam_orig, jam_new, rate):
 
     # Test the track length
@@ -99,7 +107,9 @@ def __test_params(D1, D2):
             else:
                 assert np.allclose(v1, v2)
 
-
+                
+""" Deformer: Timestretch """
+# Timestretch
 @pytest.mark.parametrize('rate', [0.5, 1.0, 2.0, [1.0, 1.5],
                                   pytest.mark.xfail(-1, raises=ValueError),
                                   pytest.mark.xfail(-0.5, raises=ValueError),
@@ -132,6 +142,7 @@ def test_timestretch(rate, jam_fixture):
     __test_params(D, D2)
 
 
+# Fixture for number of samples -- used across deformers
 @pytest.fixture(params=[1, 3, 5,
                         pytest.mark.xfail(-3, raises=ValueError),
                         pytest.mark.xfail(0, raises=ValueError)])
@@ -139,6 +150,7 @@ def n_samples(request):
     return request.param
 
 
+# LogspaceTimestretch
 @pytest.mark.parametrize('lower, upper',
                          [(-1, 0.5), (0.0, 1.0),
                           pytest.mark.xfail((-1, -3), raises=ValueError),
@@ -173,6 +185,7 @@ def test_log_timestretch(n_samples, lower, upper, jam_fixture):
     __test_params(D, D2)
 
 
+# RandomTimestretch
 @pytest.mark.parametrize('scale',
                          [0.1,
                           pytest.mark.xfail(0, raises=ValueError),
@@ -204,6 +217,7 @@ def test_random_timestretch(n_samples, scale, jam_fixture):
     __test_params(D, D2)
 
 
+""" Deformer: Bypass """
 @pytest.fixture(scope='module',
                 params=[0.5,
                         pytest.mark.xfail(None, raises=TypeError)])
@@ -235,7 +249,9 @@ def test_bypass(D_simple, jam_fixture):
     D2 = muda.deserialize(muda.serialize(D))
     __test_params(D, D2)
 
-
+    
+""" Deformer: PitchShift """
+# Helper functions
 def pstrip(x):
 
     root = re.match(six.text_type('([A-G][b#]*).*'),
@@ -310,6 +326,7 @@ def __test_pitch(jam_orig, jam_new, n_semitones, tuning):
             __test_midi(ann_orig, ann_new, n_semitones)
 
 
+# PitchShift
 @pytest.mark.parametrize('n_semitones',
                          [-2, -1, -0.5, -0.25, 0, 0.25, 1.0, 1.5, [-1, 1]])
 def test_pitchshift(n_semitones, jam_fixture):
@@ -339,6 +356,7 @@ def test_pitchshift(n_semitones, jam_fixture):
     __test_params(D, D2)
 
 
+# RandomPitchShift
 @pytest.mark.parametrize('sigma',
                          [0.5,
                           pytest.mark.xfail(-1, raises=ValueError),
@@ -370,6 +388,7 @@ def test_random_pitchshift(n_samples, sigma, jam_fixture):
     __test_params(D, D2)
 
 
+# LinearPitchShift
 @pytest.mark.parametrize('lower, upper',
                          [(-3, 1), (0.0, 3.0),
                           pytest.mark.xfail((-1, -3), raises=ValueError),
@@ -404,6 +423,7 @@ def test_linear_pitchshift(n_samples, lower, upper, jam_fixture):
     __test_params(D, D2)
 
 
+""" Deformer: Dynamic Range Compression """
 def __test_effect(jam_orig, jam_new):
     for ann_orig, ann_new in zip(jam_orig.annotations, jam_new.annotations):
         assert ann_orig == ann_new
@@ -435,6 +455,7 @@ def test_drc(preset, jam_fixture):
     __test_params(D, D2)
 
 
+""" Deformer: Background Noise """
 @pytest.mark.parametrize('noise', ['tests/data/noise_sample.ogg',
                                    ['tests/data/noise_sample.ogg']])
 @pytest.mark.parametrize('weight_min, weight_max',
@@ -496,6 +517,9 @@ def test_background_short_file():
                                    'tests/data/noise_sample.ogg')
     jam_new = next(D.transform(jam_orig))
 
+    
+""" Deformer: Colored Noise """
+# Helper functions
 def isclose_(a, b, rtol=1e-5, atol=2.5e-1):
     """Shorthand for 'assert np.isclose(a, b, rtol, atol)"""
     if not np.isclose(a, b, rtol=rtol, atol=atol):
@@ -529,6 +553,7 @@ def __test_color_slope(jam_orig, jam_new, color):
         raise ValueError('Unknown noise color\n')
 
 
+# Input JAMS
 @pytest.fixture(scope='module')
 def jam_silence_96k():
     return muda.load_jam_audio('tests/data/silence_96k.jams',
@@ -586,7 +611,11 @@ def test_colorednoise(n_samples, color, weight_min, weight_max, jam_test_silence
     # Serialization test
     D2 = muda.deserialize(muda.serialize(D))
     __test_params(D, D2)
+    
+    
+""" Deformer: IR Convolution"""
 
+'''Not used'''
 def __test_duration(jam_orig, jam_shifted, orig_duration):
     #Verify the duration of last delayed annotation is in valid range
     #Verify the total duration hasn't changed
@@ -599,6 +628,7 @@ def __test_duration(jam_orig, jam_shifted, orig_duration):
     derformed_duration = shifted_data[-1][1] #[-1][0] indicates the 'duration' of last observation
     isclose_(ref_duration,derformed_duration,rtol=1e-5, atol=1e-1)
 
+    
 def __test_shifted_impulse(jam_orig, jam_new, ir_files, orig_duration, n_fft, rolloff_value):
 
     #delayed impulse
@@ -627,6 +657,7 @@ def __test_shifted_impulse(jam_orig, jam_new, ir_files, orig_duration, n_fft, ro
             #For each observation, verify its onset time has been shifted 1s
             isclose_(1.00,shifted_data[i][0] - delayed_data[i][0])
 
+            
 @pytest.mark.parametrize('ir_files', ['tests/data/ir2_48k.wav',
                                    'tests/data/ir1_96k.wav'])
 @pytest.mark.parametrize('n_fft', [256,1024])
@@ -652,6 +683,8 @@ def test_ir_convolution(ir_files,jam_fixture,n_fft,rolloff_value):
     D2 = muda.deserialize(muda.serialize(D))
     __test_params(D, D2)
 
+    
+""" MUDA Interface Objects"""
 def test_pipeline(jam_fixture):
     D1 = muda.deformers.TimeStretch(rate=2.0)
     D2 = muda.deformers.TimeStretch(rate=1.5)
@@ -734,3 +767,142 @@ def test_base_transformer():
     D = muda.BaseTransformer()
 
     six.next(D.transform(jam_fixture))
+
+    
+""" Deformer: Clipping """
+# Helper function
+def __test_audio(jam_orig, jam_new, clip_limit):
+    
+    # Get Audio Buffer
+    y_orig = jam_orig.sandbox.muda['_audio']['y']
+    y_new = jam_new.sandbox.muda['_audio']['y']
+    
+    assert min(y_orig)*clip_limit <= y_new.all() <= max(y_orig)*clip_limit
+    
+    
+# Clipping
+@pytest.mark.parametrize('clip_limit, expectation', [(0.4, does_not_raise()), (0.8, does_not_raise()), 
+                                                     ([0.3, 0.9], does_not_raise()),
+#                                   pytest.mark.xfail(-1, raises=ValueError),
+                                  pytest.param(-1, pytest.raises(ValueError), marks=pytest.mark.xfail),
+#                                   pytest.mark.xfail(-0.1, raises=ValueError),
+                                  pytest.param(-0.1, pytest.raises(ValueError), marks=pytest.mark.xfail),
+#                                   pytest.mark.xfail(0.0, raises=ValueError),
+                                  pytest.param(0.0, pytest.raises(ValueError), marks=pytest.mark.xfail),
+#                                   pytest.mark.xfail(1.1, raises=ValueError),
+                                  pytest.param(1.1, pytest.raises(ValueError), marks=pytest.mark.xfail),
+#                                   pytest.mark.xfail([0.2, 1.0], raises=ValueError)])
+                                  pytest.param([0.2, 1.0], pytest.raises(ValueError), marks=pytest.mark.xfail)])
+def test_clipping(clip_limit, expectation, jam_fixture):
+
+    with expectation: 
+        D = muda.deformers.Clipping(clip_limit=clip_limit)
+
+    jam_orig = deepcopy(jam_fixture)
+
+    for jam_new in D.transform(jam_orig):
+        # Verify that the original jam reference hasn't changed
+        assert jam_new is not jam_fixture
+        __test_time(jam_orig, jam_fixture, 1.0)
+
+        # Verify that the state and history objects are intact
+        __test_deformer_history(D, jam_new.sandbox.muda.history[-1])
+
+        d_state = jam_new.sandbox.muda.history[-1]['state']
+        d_clip_limit = d_state['clip_limit']
+        if isinstance(clip_limit, list):
+            assert d_clip_limit in clip_limit
+        else:
+            assert d_clip_limit == clip_limit
+
+        # Verify clipping outcome
+        __test_audio(jam_orig, jam_new, d_clip_limit)
+
+    # Serialization test
+    D2 = muda.deserialize(muda.serialize(D))
+    __test_params(D, D2)
+
+
+# LinearClipping
+@pytest.mark.parametrize('lower, upper',
+                         [(0.3, 0.5), (0.1, 0.9),
+#                           pytest.mark.xfail((-0.1, 0.2), raises=ValueError),
+                          pytest.param(-0.1, 0.2, marks=pytest.mark.xfail),
+#                           pytest.mark.xfail((1.0, 1.2), raises=ValueError),
+                          pytest.param(1.0, 1.2, marks=pytest.mark.xfail),
+#                           pytest.mark.xfail((0.8, 0.6), raises=ValueError),
+                          pytest.param(0.8, 0.6, marks=pytest.mark.xfail),
+#                           pytest.mark.xfail((0.6, 1.0), raises=ValueError)])
+                          pytest.param(0.6, 1.0, marks=pytest.mark.xfail)])
+def test_linear_clipping(n_samples, lower, upper, jam_fixture):
+
+    D = muda.deformers.LinearClipping(n_samples=n_samples,
+                                               lower=lower,
+                                               upper=upper)
+
+    jam_orig = deepcopy(jam_fixture)
+
+    n_out = 0    
+    for jam_new in D.transform(jam_orig):
+        # Verify that the original jam reference hasn't changed
+        assert jam_new is not jam_fixture
+        __test_time(jam_orig, jam_fixture, 1.0)
+
+        # Verify that the state and history objects are intact
+        __test_deformer_history(D, jam_new.sandbox.muda.history[-1])
+
+        d_state = jam_new.sandbox.muda.history[-1]['state']
+        d_clip_limit = d_state['clip_limit']
+        assert lower <= d_clip_limit <= upper
+
+        # Verify clipping outcome
+        __test_audio(jam_orig, jam_new, d_clip_limit)
+        n_out += 1
+
+    assert n_samples == n_out
+
+    # Serialization test
+    D2 = muda.deserialize(muda.serialize(D))
+    __test_params(D, D2)
+
+
+# RandomClipping
+@pytest.mark.parametrize('a, b',
+                         [(0.5, 0.5), (5.0, 1.0), (1.0, 3.0),
+#                           pytest.mark.xfail((0.0,0.5), raises=ValueError),
+                          pytest.param(0.0, 0.5, marks=pytest.mark.xfail),
+#                           pytest.mark.xfail((0.5,0.0), raises=ValueError),
+                          pytest.param(0.5, 0.0, marks=pytest.mark.xfail),
+#                           pytest.mark.xfail((-0.1,1.0), raises=ValueError),
+                          pytest.param(-0.1, 1.0, marks=pytest.mark.xfail),
+#                           pytest.mark.xfail((1.0,-0.1), raises=ValueError),
+                          pytest.param(1.0, -0.1, marks=pytest.mark.xfail),
+#                           pytest.mark.xfail((-0.5,-0.5), raises=ValueError)])
+                          pytest.param(-0.5, -0.5, marks=pytest.mark.xfail)])
+def test_random_clipping(n_samples, a, b, jam_fixture):
+
+    D = muda.deformers.RandomClipping(n_samples=n_samples, a=a, b=b, rng=0)
+
+    jam_orig = deepcopy(jam_fixture)
+
+    n_out = 0
+    for jam_new in D.transform(jam_orig):
+        # Verify that the original jam reference hasn't changed
+        assert jam_new is not jam_orig
+        __test_time(jam_orig, jam_fixture, 1.0)
+
+        # Verify that the state and history objects are intact
+        __test_deformer_history(D, jam_new.sandbox.muda.history[-1])
+
+        d_state = jam_new.sandbox.muda.history[-1]['state']
+        d_clip_limit = d_state['clip_limit']
+
+        # Verify clipping outcome
+        __test_audio(jam_orig, jam_new, d_clip_limit)
+        n_out += 1
+
+    assert n_samples == n_out
+    
+    # Serialization test
+    D2 = muda.deserialize(muda.serialize(D))
+    __test_params(D, D2)
