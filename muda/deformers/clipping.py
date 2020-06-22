@@ -20,10 +20,6 @@ class AbstractClipping(BaseTransformer):
     def __init__(self):
         BaseTransformer.__init__(self)
 
-        # Build the annotation mappers
-#         self._register(".*", self.deform_times)
-#         self._register("tempo", self.deform_tempo)
-
     @staticmethod
     def audio(mudabox, state):
         # Deform the audio

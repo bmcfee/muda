@@ -42,6 +42,6 @@ setup(
     ],
     extras_require={
         'docs': ['numpydoc'],
-        'tests': ['pytest < 4', 'pytest-cov'],
+        'tests': ['pytest < 4', 'pytest-cov==2.9.0'],
     }
 )

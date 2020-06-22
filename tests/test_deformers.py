@@ -771,7 +771,7 @@ def test_base_transformer():
     
 """ Deformer: Clipping """
 # Helper function
-def __test_audio(jam_orig, jam_new, clip_limit):
+def __test_clipped_buffer(jam_orig, jam_new, clip_limit):
     
     # Get Audio Buffer
     y_orig = jam_orig.sandbox.muda['_audio']['y']
@@ -783,15 +783,17 @@ def __test_audio(jam_orig, jam_new, clip_limit):
 # Clipping
 @pytest.mark.parametrize('clip_limit, expectation', [(0.4, does_not_raise()), (0.8, does_not_raise()), 
                                                      ([0.3, 0.9], does_not_raise()),
+# Old marker style - deprecated
 #                                   pytest.mark.xfail(-1, raises=ValueError),
-                                  pytest.param(-1, pytest.raises(ValueError), marks=pytest.mark.xfail),
 #                                   pytest.mark.xfail(-0.1, raises=ValueError),
-                                  pytest.param(-0.1, pytest.raises(ValueError), marks=pytest.mark.xfail),
 #                                   pytest.mark.xfail(0.0, raises=ValueError),
-                                  pytest.param(0.0, pytest.raises(ValueError), marks=pytest.mark.xfail),
 #                                   pytest.mark.xfail(1.1, raises=ValueError),
-                                  pytest.param(1.1, pytest.raises(ValueError), marks=pytest.mark.xfail),
 #                                   pytest.mark.xfail([0.2, 1.0], raises=ValueError)])
+# New marker style
+                                  pytest.param(-1, pytest.raises(ValueError), marks=pytest.mark.xfail),
+                                  pytest.param(-0.1, pytest.raises(ValueError), marks=pytest.mark.xfail),
+                                  pytest.param(0.0, pytest.raises(ValueError), marks=pytest.mark.xfail),
+                                  pytest.param(1.1, pytest.raises(ValueError), marks=pytest.mark.xfail),
                                   pytest.param([0.2, 1.0], pytest.raises(ValueError), marks=pytest.mark.xfail)])
 def test_clipping(clip_limit, expectation, jam_fixture):
 
@@ -816,7 +818,7 @@ def test_clipping(clip_limit, expectation, jam_fixture):
             assert d_clip_limit == clip_limit
 
         # Verify clipping outcome
-        __test_audio(jam_orig, jam_new, d_clip_limit)
+        __test_clipped_buffer(jam_orig, jam_new, d_clip_limit)
 
     # Serialization test
     D2 = muda.deserialize(muda.serialize(D))
@@ -826,13 +828,15 @@ def test_clipping(clip_limit, expectation, jam_fixture):
 # LinearClipping
 @pytest.mark.parametrize('lower, upper',
                          [(0.3, 0.5), (0.1, 0.9),
+# Old marker style - deprecated
 #                           pytest.mark.xfail((-0.1, 0.2), raises=ValueError),
-                          pytest.param(-0.1, 0.2, marks=pytest.mark.xfail),
 #                           pytest.mark.xfail((1.0, 1.2), raises=ValueError),
-                          pytest.param(1.0, 1.2, marks=pytest.mark.xfail),
 #                           pytest.mark.xfail((0.8, 0.6), raises=ValueError),
-                          pytest.param(0.8, 0.6, marks=pytest.mark.xfail),
 #                           pytest.mark.xfail((0.6, 1.0), raises=ValueError)])
+# New marker style
+                          pytest.param(-0.1, 0.2, marks=pytest.mark.xfail),
+                          pytest.param(1.0, 1.2, marks=pytest.mark.xfail),
+                          pytest.param(0.8, 0.6, marks=pytest.mark.xfail),
                           pytest.param(0.6, 1.0, marks=pytest.mark.xfail)])
 def test_linear_clipping(n_samples, lower, upper, jam_fixture):
 
@@ -856,7 +860,7 @@ def test_linear_clipping(n_samples, lower, upper, jam_fixture):
         assert lower <= d_clip_limit <= upper
 
         # Verify clipping outcome
-        __test_audio(jam_orig, jam_new, d_clip_limit)
+        __test_clipped_buffer(jam_orig, jam_new, d_clip_limit)
         n_out += 1
 
     assert n_samples == n_out
@@ -869,15 +873,17 @@ def test_linear_clipping(n_samples, lower, upper, jam_fixture):
 # RandomClipping
 @pytest.mark.parametrize('a, b',
                          [(0.5, 0.5), (5.0, 1.0), (1.0, 3.0),
+# Old marker style - deprecated
 #                           pytest.mark.xfail((0.0,0.5), raises=ValueError),
-                          pytest.param(0.0, 0.5, marks=pytest.mark.xfail),
 #                           pytest.mark.xfail((0.5,0.0), raises=ValueError),
-                          pytest.param(0.5, 0.0, marks=pytest.mark.xfail),
 #                           pytest.mark.xfail((-0.1,1.0), raises=ValueError),
-                          pytest.param(-0.1, 1.0, marks=pytest.mark.xfail),
 #                           pytest.mark.xfail((1.0,-0.1), raises=ValueError),
-                          pytest.param(1.0, -0.1, marks=pytest.mark.xfail),
 #                           pytest.mark.xfail((-0.5,-0.5), raises=ValueError)])
+# New marker style
+                          pytest.param(0.0, 0.5, marks=pytest.mark.xfail),
+                          pytest.param(0.5, 0.0, marks=pytest.mark.xfail),
+                          pytest.param(-0.1, 1.0, marks=pytest.mark.xfail),
+                          pytest.param(1.0, -0.1, marks=pytest.mark.xfail),
                           pytest.param(-0.5, -0.5, marks=pytest.mark.xfail)])
 def test_random_clipping(n_samples, a, b, jam_fixture):
 
@@ -898,7 +904,7 @@ def test_random_clipping(n_samples, a, b, jam_fixture):
         d_clip_limit = d_state['clip_limit']
 
         # Verify clipping outcome
-        __test_audio(jam_orig, jam_new, d_clip_limit)
+        __test_clipped_buffer(jam_orig, jam_new, d_clip_limit)
         n_out += 1
 
     assert n_samples == n_out
