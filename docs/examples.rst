@@ -21,12 +21,12 @@ contain (deformed) audio and store the deformation history objects.
     >>> # Ready to go!
 
     >>> # Loading audio from disk with an existing jams
-    >>> j_orig = jams.load('existing_jams_file.jams')
+    >>> existing_jams = jams.load('existing_jams_file.jams')
     >>> j_orig = muda.load_jam_audio(existing_jams, 'orig.ogg')
     >>> # Ready to go!
 
     >>> # Loading in-memory audio (y, sr) with an existing jams
-    >>> j_orig = jams.load('existing_jams_file.jams')
+    >>> existing_jams = jams.load('existing_jams_file.jams')
     >>> j_orig = muda.jam_pack(existing_jams, _audio=dict(y=y, sr=sr))
     >>> # Ready to go!
 

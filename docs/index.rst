@@ -19,7 +19,7 @@ perturbations to annotated music data for the purpose of fitting statistical mod
 
 Introduction
 ------------
-.. note:: Before reading ahead, it is recommended to familiarize yourself with the `JAMS documentation <http://pythonhosted.org/jams/>`_.
+.. note:: Before reading ahead, it is recommended to familiarize yourself with the `JAMS documentation <https://jams.readthedocs.io/en/stable/>`_.
 
 The design of `muda` is patterned loosely after the `Transformer` abstraction in `scikit-learn <http://scikit-learn.org/stable/>`_.
 At a high level, each input example consists of an audio clip (with sampling rate) as a `numpy.ndarray` and its annotations stored 
