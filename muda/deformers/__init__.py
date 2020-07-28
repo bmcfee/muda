@@ -11,3 +11,4 @@ from .util import *
 from .colorednoise import *
 from .ir import *
 from .clipping import *
+from .filter import *
