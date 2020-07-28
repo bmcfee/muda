@@ -10,3 +10,4 @@ from .sox import *
 from .util import *
 from .colorednoise import *
 from .ir import *
+from .filter import *
