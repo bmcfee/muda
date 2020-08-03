@@ -16,7 +16,6 @@ from scipy import signal
 
 import pytest
 import scipy
-from math import log2, pow
 
 from contextlib import contextmanager
 
@@ -62,7 +61,7 @@ def jam_impulse():
     jam = make_jam(freq_dict,sr,1.5)
     
     if jam.file_metadata.duration is None:
-        jam.file_metadata.duration = librosa.get_duration(y=impulse, sr=sr)
+        jam.file_metadata.duration = 1.5
 
     return muda.jam_pack(jam, _audio=dict(y=impulse, sr=sr))
 
@@ -76,21 +75,6 @@ def test_raw(jam_raw):
 
     D = muda.deformers.TimeStretch(rate=2.0)
     six.next(D.transform(jam_raw))
-
-def freq2midi(freq):
-    return 69 + 12 * np.log2(freq/440)
-
-def midi2freq(midi):
-    return 2**((midi-69)/12)*440
-
-def pitch(freq):
-    A4 = 440
-    C0 = A4*pow(2, -4.75)
-    name = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
-    h = round(12*log2(freq/C0))
-    octave = h // 12
-    n = h % 12
-    return name[n] + str(octave)
 
 def make_jam(freq_dict,sr,track_duration):
     """
@@ -127,11 +111,11 @@ def make_jam(freq_dict,sr,track_duration):
         for t, dur in time_dur:
             pitch_co.append(time=t, duration=dur, value={"index":0,"frequency":f,"voiced":True})
             note_h.append(time=t, duration=dur,value=f)
-            note_m.append(time=t, duration=dur, value=69+12*np.log2(f/440.0))
-            pclass = pitch(f)
+            note_m.append(time=t, duration=dur, value=librosa.hz_to_midi(f))
+            pclass = librosa.hz_to_note(f)
             pitch_cl.append(time=t, duration=dur,value={"tonic":pclass[:-1],"pitch":int(pclass[-1])})
             pitch_h.append(time=t, duration=dur,value=f)
-            pitch_m.append(time=t, duration=dur, value=69+12*np.log2(f/440.0))
+            pitch_m.append(time=t, duration=dur, value=librosa.hz_to_midi(f))
     # Store the new annotation in the jam
     jam.annotations.append(pitch_co)
     jam.annotations.append(note_h)
@@ -868,18 +852,16 @@ def test_base_transformer():
 # Helper function 
 
 def __test_tonic_filter(ann_orig, ann_new, cutoff):
-# raise error if original note now out of range is still included in annotation 
-#transform original, compare with new
-    j = 0
-    for i,obs1 in enumerate(ann_orig):
-        if j >= len(ann_new.data):
-            break
-        v_orig = midi2freq(pstrip(obs1.value['tonic']))#convert tonic to midi
-        if cutoff[0] < v_orig and cutoff[1] > v_orig:
-            #in range, see if annotation is kept the same
-            v_new = midi2freq(pstrip(ann_new.data[j].value["tonic"]))
-            ap_(v_orig, v_new)
-            j+=1
+    # raise error if original note now out of range is still included in annotation 
+    for obs in ann_new:
+        v_new = librosa.note_to_hz(obs.value["tonic"]+str(obs.value['pitch']))
+        assert cutoff[0] < v_new < cutoff[1]
+
+    # ensure number of new annotations is less than or equal to the original  
+    assert len(ann_new) <= len(ann_orig)
+
+
+
 
 
 
@@ -899,29 +881,19 @@ def __test_contour_filter(ann_orig, ann_new, cutoff):
 
 def __test_hz_filter(ann_orig, ann_new, cutoff):
 
-    j = 0
-    for i,obs1 in enumerate(ann_orig):
-        if j >= len(ann_new.data):
-            break
-        v_orig = obs1.value
-        if cutoff[0] < v_orig and cutoff[1] > v_orig:
-            v_new = ann_new.data[j].value
-            ap_(v_orig,v_new)
-            j += 1
+    for obs in ann_new:
+        v_new = obs.value
+        assert cutoff[0] < v_new < cutoff[1]
+    assert len(ann_new) <= len(ann_orig)
+
 
 
 def __test_midi_filter(ann_orig, ann_new, cutoff):
 
-    j = 0
-    for i,obs1 in enumerate(ann_orig):
-        if j >= len(ann_new.data):
-            break
-        v_orig = midi2freq(obs1.value)
-        if cutoff[0] < v_orig and cutoff[1] > v_orig:
-            assert v_orig > cutoff[0] and v_orig < cutoff[1]
-            v_new = midi2freq(ann_new.data[j].value)
-            ap_(v_orig,v_new)
-            j += 1
+    for obs in ann_new:
+        v_new = librosa.midi_to_hz(obs.value)
+        assert cutoff[0] < v_new < cutoff[1]
+    assert len(ann_new) <= len(ann_orig)
 
 
 def __test_pitch_filter(jam_orig, jam_new, cutoff):
@@ -1043,47 +1015,6 @@ def test_filtering(btype, cutoff, jam_impulse,attenuation):
         assert not np.allclose(jam_orig.sandbox.muda['_audio']['y'],
                                jam_new.sandbox.muda['_audio']['y'])
     
-""" Deformer: Clipping """
-# Helper function
-def __test_clipped_buffer(jam_orig, jam_new, clip_limit):
-    
-    # Get Audio Buffer
-    y_orig = jam_orig.sandbox.muda['_audio']['y']
-    y_new = jam_new.sandbox.muda['_audio']['y']
-    
-    assert min(y_orig)*clip_limit <= y_new.all() <= max(y_orig)*clip_limit
-    
-    
-# Clipping
-@pytest.mark.parametrize('clip_limit, expectation', [(0.4, does_not_raise()), (0.8, does_not_raise()), 
-                                                     ([0.3, 0.9], does_not_raise()),
-# Old marker style - deprecated
-#                                   pytest.mark.xfail(-1, raises=ValueError),
-#                                   pytest.mark.xfail(-0.1, raises=ValueError),
-#                                   pytest.mark.xfail(0.0, raises=ValueError),
-#                                   pytest.mark.xfail(1.1, raises=ValueError),
-#                                   pytest.mark.xfail([0.2, 1.0], raises=ValueError)])
-# New marker style
-                                  pytest.param(-1, pytest.raises(ValueError), marks=pytest.mark.xfail),
-                                  pytest.param(-0.1, pytest.raises(ValueError), marks=pytest.mark.xfail),
-                                  pytest.param(0.0, pytest.raises(ValueError), marks=pytest.mark.xfail),
-                                  pytest.param(1.1, pytest.raises(ValueError), marks=pytest.mark.xfail),
-                                  pytest.param([0.2, 1.0], pytest.raises(ValueError), marks=pytest.mark.xfail)])
-def test_clipping(clip_limit, expectation, jam_fixture):
-
-    with expectation: 
-        D = muda.deformers.Clipping(clip_limit=clip_limit)
-
-    jam_orig = deepcopy(jam_fixture)
-
-    for jam_new in D.transform(jam_orig):
-        # Verify that the original jam reference hasn't changed
-        assert jam_new is not jam_fixture
-        __test_time(jam_orig, jam_fixture, 1.0)
-
-        # Verify that the state and history objects are intact
-        __test_deformer_history(D, jam_new.sandbox.muda.history[-1])
-
         d_state = jam_new.sandbox.muda.history[-1]['state']
         nyquist = d_state["nyquist"]
         order = d_state['order']
@@ -1120,19 +1051,12 @@ def test_clipping(clip_limit, expectation, jam_fixture):
             jam_orig.sandbox.muda['_audio']['y'],
             jam_orig.sandbox.muda['_audio']['sr'],
             btype)
-        d_clip_limit = d_state['clip_limit']
-        if isinstance(clip_limit, list):
-            assert d_clip_limit in clip_limit
-        else:
-            assert d_clip_limit == clip_limit
-
-        # Verify clipping outcome
-        __test_clipped_buffer(jam_orig, jam_new, d_clip_limit)
 
     # Serialization test
     D2 = muda.deserialize(muda.serialize(D))
     __test_params(D, D2)
 
+        
 #test random lowpass
 @pytest.mark.parametrize('cutoff',
                          [50.0,100.0,400.0,1000.0,
@@ -1174,32 +1098,6 @@ def test_randomlpfiltering(n_samples,cutoff, jam_impulse,attenuation):
     for jam_new in D.transform(jam_orig):
         # Verify that the original jam reference hasn't changed
         assert jam_new is not jam_orig
-# LinearClipping
-@pytest.mark.parametrize('lower, upper',
-                         [(0.3, 0.5), (0.1, 0.9),
-# Old marker style - deprecated
-#                           pytest.mark.xfail((-0.1, 0.2), raises=ValueError),
-#                           pytest.mark.xfail((1.0, 1.2), raises=ValueError),
-#                           pytest.mark.xfail((0.8, 0.6), raises=ValueError),
-#                           pytest.mark.xfail((0.6, 1.0), raises=ValueError)])
-# New marker style
-                          pytest.param(-0.1, 0.2, marks=pytest.mark.xfail),
-                          pytest.param(1.0, 1.2, marks=pytest.mark.xfail),
-                          pytest.param(0.8, 0.6, marks=pytest.mark.xfail),
-                          pytest.param(0.6, 1.0, marks=pytest.mark.xfail)])
-def test_linear_clipping(n_samples, lower, upper, jam_fixture):
-
-    D = muda.deformers.LinearClipping(n_samples=n_samples,
-                                               lower=lower,
-                                               upper=upper)
-
-    jam_orig = deepcopy(jam_fixture)
-
-    n_out = 0    
-    for jam_new in D.transform(jam_orig):
-        # Verify that the original jam reference hasn't changed
-        assert jam_new is not jam_fixture
-        __test_time(jam_orig, jam_fixture, 1.0)
 
         # Verify that the state and history objects are intact
         __test_deformer_history(D, jam_new.sandbox.muda.history[-1])
@@ -1226,12 +1124,6 @@ def test_linear_clipping(n_samples, lower, upper, jam_fixture):
             jam_orig.sandbox.muda['_audio']['y'],
             jam_orig.sandbox.muda['_audio']['sr'],
             "low")
-
-        d_clip_limit = d_state['clip_limit']
-        assert lower <= d_clip_limit <= upper
-
-        # Verify clipping outcome
-        __test_clipped_buffer(jam_orig, jam_new, d_clip_limit)
         n_out += 1
 
     assert n_samples == n_out
@@ -1239,6 +1131,7 @@ def test_linear_clipping(n_samples, lower, upper, jam_fixture):
     # Serialization test
     D2 = muda.deserialize(muda.serialize(D))
     __test_params(D, D2)
+        
 
 
 @pytest.mark.parametrize('cutoff',
@@ -1277,33 +1170,12 @@ def test_randomhpfiltering(cutoff, n_samples,jam_impulse,attenuation):
     jam_orig = deepcopy(jam_impulse)
     orig_duration = librosa.get_duration(**jam_orig.sandbox.muda['_audio'])
     
-=======
-# RandomClipping
-@pytest.mark.parametrize('a, b',
-                         [(0.5, 0.5), (5.0, 1.0), (1.0, 3.0),
-# Old marker style - deprecated
-#                           pytest.mark.xfail((0.0,0.5), raises=ValueError),
-#                           pytest.mark.xfail((0.5,0.0), raises=ValueError),
-#                           pytest.mark.xfail((-0.1,1.0), raises=ValueError),
-#                           pytest.mark.xfail((1.0,-0.1), raises=ValueError),
-#                           pytest.mark.xfail((-0.5,-0.5), raises=ValueError)])
-# New marker style
-                          pytest.param(0.0, 0.5, marks=pytest.mark.xfail),
-                          pytest.param(0.5, 0.0, marks=pytest.mark.xfail),
-                          pytest.param(-0.1, 1.0, marks=pytest.mark.xfail),
-                          pytest.param(1.0, -0.1, marks=pytest.mark.xfail),
-                          pytest.param(-0.5, -0.5, marks=pytest.mark.xfail)])
-def test_random_clipping(n_samples, a, b, jam_fixture):
-
-    D = muda.deformers.RandomClipping(n_samples=n_samples, a=a, b=b, rng=0)
-
-    jam_orig = deepcopy(jam_fixture)
-
-    n_out = 0
+    n_out = 0 
     for jam_new in D.transform(jam_orig):
         # Verify that the original jam reference hasn't changed
         assert jam_new is not jam_orig
-       
+
+
         # Verify that the state and history objects are intact
         __test_deformer_history(D, jam_new.sandbox.muda.history[-1])
 
@@ -1389,7 +1261,6 @@ def test_randombpfiltering(cutoff, n_samples, jam_impulse,attenuation):
         # Verify that the original jam reference hasn't changed
         assert jam_new is not jam_orig
        
-        __test_time(jam_orig, jam_fixture, 1.0)
 
         # Verify that the state and history objects are intact
         __test_deformer_history(D, jam_new.sandbox.muda.history[-1])
@@ -1423,6 +1294,140 @@ def test_randombpfiltering(cutoff, n_samples, jam_impulse,attenuation):
     D2 = muda.deserialize(muda.serialize(D))
     __test_params(D, D2)
 
+        
+
+
+
+
+""" Deformer: Clipping """
+# Helper function
+def __test_clipped_buffer(jam_orig, jam_new, clip_limit):
+    
+    # Get Audio Buffer
+    y_orig = jam_orig.sandbox.muda['_audio']['y']
+    y_new = jam_new.sandbox.muda['_audio']['y']
+    
+    assert min(y_orig)*clip_limit <= y_new.all() <= max(y_orig)*clip_limit
+    
+    
+# Clipping
+@pytest.mark.parametrize('clip_limit, expectation', [(0.4, does_not_raise()), (0.8, does_not_raise()), 
+                                                     ([0.3, 0.9], does_not_raise()),
+# Old marker style - deprecated
+#                                   pytest.mark.xfail(-1, raises=ValueError),
+#                                   pytest.mark.xfail(-0.1, raises=ValueError),
+#                                   pytest.mark.xfail(0.0, raises=ValueError),
+#                                   pytest.mark.xfail(1.1, raises=ValueError),
+#                                   pytest.mark.xfail([0.2, 1.0], raises=ValueError)])
+# New marker style
+                                  pytest.param(-1, pytest.raises(ValueError), marks=pytest.mark.xfail),
+                                  pytest.param(-0.1, pytest.raises(ValueError), marks=pytest.mark.xfail),
+                                  pytest.param(0.0, pytest.raises(ValueError), marks=pytest.mark.xfail),
+                                  pytest.param(1.1, pytest.raises(ValueError), marks=pytest.mark.xfail),
+                                  pytest.param([0.2, 1.0], pytest.raises(ValueError), marks=pytest.mark.xfail)])
+def test_clipping(clip_limit, expectation, jam_fixture):
+
+    with expectation: 
+        D = muda.deformers.Clipping(clip_limit=clip_limit)
+
+    jam_orig = deepcopy(jam_fixture)
+
+    for jam_new in D.transform(jam_orig):
+        # Verify that the original jam reference hasn't changed
+        assert jam_new is not jam_fixture
+        __test_time(jam_orig, jam_fixture, 1.0)
+
+        # Verify that the state and history objects are intact
+        __test_deformer_history(D, jam_new.sandbox.muda.history[-1])
+
+        d_state = jam_new.sandbox.muda.history[-1]['state']
+        d_clip_limit = d_state['clip_limit']
+        if isinstance(clip_limit, list):
+            assert d_clip_limit in clip_limit
+        else:
+            assert d_clip_limit == clip_limit
+
+        # Verify clipping outcome
+        __test_clipped_buffer(jam_orig, jam_new, d_clip_limit)
+
+    # Serialization test
+    D2 = muda.deserialize(muda.serialize(D))
+    __test_params(D, D2)
+
+# LinearClipping
+@pytest.mark.parametrize('lower, upper',
+                         [(0.3, 0.5), (0.1, 0.9),
+# Old marker style - deprecated
+#                           pytest.mark.xfail((-0.1, 0.2), raises=ValueError),
+#                           pytest.mark.xfail((1.0, 1.2), raises=ValueError),
+#                           pytest.mark.xfail((0.8, 0.6), raises=ValueError),
+#                           pytest.mark.xfail((0.6, 1.0), raises=ValueError)])
+# New marker style
+                          pytest.param(-0.1, 0.2, marks=pytest.mark.xfail),
+                          pytest.param(1.0, 1.2, marks=pytest.mark.xfail),
+                          pytest.param(0.8, 0.6, marks=pytest.mark.xfail),
+                          pytest.param(0.6, 1.0, marks=pytest.mark.xfail)])
+def test_linear_clipping(n_samples, lower, upper, jam_fixture):
+
+    D = muda.deformers.LinearClipping(n_samples=n_samples,
+                                               lower=lower,
+                                               upper=upper)
+
+    jam_orig = deepcopy(jam_fixture)
+
+    n_out = 0    
+    for jam_new in D.transform(jam_orig):
+        # Verify that the original jam reference hasn't changed
+        assert jam_new is not jam_fixture
+        __test_time(jam_orig, jam_fixture, 1.0)
+
+        # Verify that the state and history objects are intact
+        __test_deformer_history(D, jam_new.sandbox.muda.history[-1])
+
+        d_state = jam_new.sandbox.muda.history[-1]['state']
+        d_clip_limit = d_state['clip_limit']
+        assert lower <= d_clip_limit <= upper
+
+        # Verify clipping outcome
+        __test_clipped_buffer(jam_orig, jam_new, d_clip_limit)
+        n_out += 1
+
+    assert n_samples == n_out
+
+    # Serialization test
+    D2 = muda.deserialize(muda.serialize(D))
+    __test_params(D, D2)
+
+# RandomClipping
+@pytest.mark.parametrize('a, b',
+                         [(0.5, 0.5), (5.0, 1.0), (1.0, 3.0),
+# Old marker style - deprecated
+#                           pytest.mark.xfail((0.0,0.5), raises=ValueError),
+#                           pytest.mark.xfail((0.5,0.0), raises=ValueError),
+#                           pytest.mark.xfail((-0.1,1.0), raises=ValueError),
+#                           pytest.mark.xfail((1.0,-0.1), raises=ValueError),
+#                           pytest.mark.xfail((-0.5,-0.5), raises=ValueError)])
+# New marker style
+                          pytest.param(0.0, 0.5, marks=pytest.mark.xfail),
+                          pytest.param(0.5, 0.0, marks=pytest.mark.xfail),
+                          pytest.param(-0.1, 1.0, marks=pytest.mark.xfail),
+                          pytest.param(1.0, -0.1, marks=pytest.mark.xfail),
+                          pytest.param(-0.5, -0.5, marks=pytest.mark.xfail)])
+def test_random_clipping(n_samples, a, b, jam_fixture):
+
+    D = muda.deformers.RandomClipping(n_samples=n_samples, a=a, b=b, rng=0)
+
+    jam_orig = deepcopy(jam_fixture)
+
+    n_out = 0
+    for jam_new in D.transform(jam_orig):
+        # Verify that the original jam reference hasn't changed
+        assert jam_new is not jam_orig
+       
+        # Verify that the state and history objects are intact
+        __test_deformer_history(D, jam_new.sandbox.muda.history[-1])
+
+        d_state = jam_new.sandbox.muda.history[-1]['state']
         d_clip_limit = d_state['clip_limit']
 
         # Verify clipping outcome
@@ -1434,3 +1439,5 @@ def test_randombpfiltering(cutoff, n_samples, jam_impulse,attenuation):
     # Serialization test
     D2 = muda.deserialize(muda.serialize(D))
     __test_params(D, D2)
+
+

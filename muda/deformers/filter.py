@@ -7,6 +7,7 @@ import numpy as np
 from scipy import signal
 from copy import deepcopy
 import numpy as np
+import librosa
 
 from ..base import BaseTransformer, _get_rng
 
@@ -17,11 +18,11 @@ def checkfreqinband(freq,state,datatype):
     #check if frequency falls into the passband, frequency received in hertz
     #convert frequency to hertz
     if datatype == "midi":
-        frequency = 2**((freq-69)/12)*440
+        frequency = librosa.midi_to_hz(freq)
     elif datatype == "hz":
         frequency = freq
     elif datatype == "pitchclass":
-        frequency = pitch2freq(freq)
+        frequency = librosa.note_to_hz(freq)
     #check if it falls into the passband
     if state["btype"] == "bandpass":
         low,high = state["cut_off"]
@@ -32,6 +33,7 @@ def checkfreqinband(freq,state,datatype):
         high = state["nyquist"]
         low = state["cut_off"]
 
+    #if frequency out of passband do not create new annotations and designate frequency as None, voiced as False
     if frequency <=low:
         return None,False
     elif frequency >= high:
@@ -39,16 +41,6 @@ def checkfreqinband(freq,state,datatype):
     else:
         return freq, True
 
-def pitch2freq(pitchclass):
-    A4 = 440
-    C0 = A4*pow(2, -4.75)
-    name = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
-    tonic = pitchclass[:-1]
-    pitch = int(pitchclass[-1])
-    n = name.index(tonic)
-    h = pitch * 12 + n
-    freq = C0 * 2 **(h/12)
-    return freq
 
 
 class AbstractFilter(BaseTransformer):
