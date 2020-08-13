@@ -15,7 +15,28 @@ __all__ = ["Filter", "RandomLPFilter", "RandomHPFilter","RandomBPFilter"]
 
 
 def checkfreqinband(freq,state,datatype):
-    #check if frequency falls into the passband, frequency received in hertz
+    """check if a given frequency falls into the passband
+
+
+    Parameters
+    ----------
+    freq: int, float or string
+        If int, frequency is a midi number
+        If float, frequency is in hz
+        If string, frequency is the pitch class 
+   
+    state: state of the current filter deformer
+
+    datatype: "midi" or "hz" or "pitchclass", specifying unit of frequency, one of midi, 
+    
+    Returns
+    -------
+    Frequency: freq or None
+        frequency if it falls under passband, or None otherwise
+    Bool : 
+        True if the frequency falls under passband, False otherwise
+    """
+   
     #convert frequency to hertz
     if datatype == "midi":
         frequency = librosa.midi_to_hz(freq)
@@ -23,6 +44,7 @@ def checkfreqinband(freq,state,datatype):
         frequency = freq
     elif datatype == "pitchclass":
         frequency = librosa.note_to_hz(freq)
+   
     #check if it falls into the passband
     if state["btype"] == "bandpass":
         low,high = state["cut_off"]
@@ -186,7 +208,8 @@ class Filter(AbstractFilter):
 
     Examples
     --------
-    >>> # Shift down by a quarter-tone
+    >>> # Filter the signal at the passband frequency with a 
+        chebyshev type 2 filter of certain order and attenuation
     >>> D = muda.deformers.Filter(btype,order,attenuation,cutoff)
     """
 
@@ -196,12 +219,12 @@ class Filter(AbstractFilter):
         self.order = order
         self.attenuation = attenuation
         if self.btype == "bandpass":
-            if type(cutoff) == tuple:
+            if isinstance(cutoff,tuple):
                 self.cutoff = [cutoff]
-            elif type(cutoff) == list:
-                if all(type(i) == tuple for i in cutoff):
+            elif isinstance(cutoff,list):
+                if all(isinstance(i,tuple) for i in cutoff):
                     self.cutoff = cutoff
-                elif all(type(i) == list for i in cutoff):
+                elif all(isinstance(i,list) for i in cutoff):
                     if all(len(i) == 2 for i in cutoff): # [[a,b],[c,d]]
                         self.cutoff = [tuple(c) for c in cutoff]
                     else:
@@ -212,9 +235,9 @@ class Filter(AbstractFilter):
                 raise ValueError("bandpass filter cutoff must be tuple or list of tuples")
 
         else:
-            if type(cutoff) == tuple:
+            if isinstance(cutoff,tuple):
                 raise ValueError("low/high pass filter cutoff must be float or list of floats")
-            elif type(cutoff)==list and type(cutoff[0])==tuple:
+            elif isinstance(cutoff,list) and isinstance(cutoff[0],tuple):
                 raise ValueError("low/high pass filter cutoff must be float or list of floats")
 
             else:
@@ -297,7 +320,9 @@ class RandomLPFilter(AbstractFilter):
 
     Examples
     --------
-    >>> # Shift down by a quarter-tone
+    >>> # Apply n_samples of low pass filtering, 
+        where the cutoff frequency is randomly extracted 
+        from a normal distribution
     >>> D = muda.deformers.RandomLPFilter(n_samples,order,attenuation,cutoff,sigma)
     """
 
@@ -309,10 +334,10 @@ class RandomLPFilter(AbstractFilter):
         if n_samples <= 0:
             raise ValueError("n_samples must be None or positive")
 
-        if type(cutoff)==float and cutoff<=0:
+        if isinstance(cutoff,float) and cutoff<=0:
             raise ValueError("cutoff frequency must be None or positive")
 
-        if type(cutoff)==list and sum(np.array(cutoff)<=0)>0:
+        if isinstance(cutoff,list) and sum(np.array(cutoff)<=0)>0:
             raise ValueError("cutoff frequency must be None or positive")
 
         if order <= 0 or attenuation <= 0:
@@ -388,8 +413,10 @@ class RandomHPFilter(AbstractFilter):
 
     Examples
     --------
-    >>> # Shift down by a quarter-tone
-    >>> D = muda.deformers.RandomLPFilter(m_samples,order,attenuation,cutoff,sigma)
+    >>> # Apply n_samples of high pass filtering, 
+        where the cutoff frequency is randomly extracted 
+        from a normal distribution
+    >>> D = muda.deformers.RandomHPFilter(m_samples,order,attenuation,cutoff,sigma)
     """
 
     def __init__(self, n_samples=3, order=4, attenuation=60.0, cutoff=8000,sigma=1.0,rng=0):
@@ -403,7 +430,7 @@ class RandomHPFilter(AbstractFilter):
         if order <= 0 or attenuation <= 0:
             raise ValueError("order and attenuation must be None or positive")
 
-        if type(cutoff)==list or cutoff<=0:
+        if isinstance(cutoff,list) or cutoff<=0:
             raise ValueError("high pass cutoff frequency must be strictly positive and lower than nyquist frequency")
 
 
@@ -476,21 +503,27 @@ class RandomBPFilter(AbstractFilter):
 
     Examples
     --------
-    >>> # Shift down by a quarter-tone
+    >>> # Apply n_samples of band pass filtering, where the 
+        low and high cutoff frequencies are randomly selected from two 
+        normal distributions centered around some specified lowerbound 
+        and upperbound
     >>> D = muda.deformers.RandomBPFilter(n_samples,order,attenuation,cutoff_low,cutoff_high,sigma)
     """
 
     def __init__(self, n_samples=3, order=4, attenuation=60.0, cutoff_low=4000, cutoff_high=8000,sigma=1.0,rng=0):
         AbstractFilter.__init__(self)
-        if sigma <= 0:
+        if sigma is not None and sigma <= 0:
             raise ValueError("sigma must be strictly positive")
 
-        if n_samples <= 0:
+        if n_samples is not None and n_samples <= 0:
             raise ValueError("n_samples must be None or positive")
 
-        if order <= 0 or attenuation <= 0:
-            raise ValueError("order and attenuation must be None or positive")
+        if order is not None and order <= 0:
+            raise ValueError("order must be None or positive")
 
+        if attenuation is not None and attenuation <= 0:
+            raise ValueError("attenuation must be None or positive")
+    
         if cutoff_low >= cutoff_high:
             raise ValueError("band pass higher cutoff frequency must be strictly greater than lower cutoff frequency")
         if cutoff_low<=0 or cutoff_high <=0:
