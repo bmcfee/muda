@@ -254,7 +254,7 @@ class Filter(AbstractFilter):
                         raise ValueError("cutoff_low must be smaller than cutoff_high")
                     else:
                         state["cut_off"] = (low,high)
-                        state["order"] = signal.cheb2ord([low,high], [low-fs/10,high+fs/10], 3, self.attenuation, fs=fs)
+                        state["order"] = signal.cheb2ord([low,high], [low-fs/10,high+fs/10], 3, self.attenuation, fs=fs)[0]
                         state["attenuation"] = self.attenuation
                         state["btype"] = self.btype
                         yield state
@@ -264,7 +264,7 @@ class Filter(AbstractFilter):
                         raise ValueError("cutoff frequency for lowpass filter must be strictly positive")
                     else:
                         state["cut_off"] = freq
-                        state["order"] = signal.cheb2ord(freq, freq+fs/10, 3, self.attenuation, fs=fs)
+                        state["order"] = signal.cheb2ord(freq, freq+fs/10, 3, self.attenuation, fs=fs)[0]
                         state["attenuation"] = self.attenuation
                         state["btype"] = self.btype
                         yield state
@@ -274,7 +274,7 @@ class Filter(AbstractFilter):
                         raise ValueError("cutoff frequency for high pass filter must be strictly positive and smaller than nyquist frequency")
                     else:
                         state["cut_off"] = freq
-                        state["order"] = signal.cheb2ord(freq, freq-fs/10, 3, self.attenuation, fs=fs)
+                        state["order"] = signal.cheb2ord(freq, freq-fs/10, 3, self.attenuation, fs=fs)[0]
                         state["attenuation"] = self.attenuation
                         state["btype"] = self.btype
                         yield state
@@ -364,7 +364,7 @@ class RandomLPFilter(AbstractFilter):
         for state in AbstractFilter.states(self, jam):
             for _ in range(self.n_samples):
                 state["btype"] = "low"
-                state["order"] =  signal.cheb2ord(freq, freq+fs/10, 3, self.attenuation, fs=fs)
+                state["order"] =  signal.cheb2ord(freq, freq+fs/10, 3, self.attenuation, fs=fs)[0]
                 state["attenuation"] = self.attenuation
                 state["cut_off"] = self._rng.normal(
                         loc=self.cutoff, scale=self.sigma, size=None
@@ -454,7 +454,7 @@ class RandomHPFilter(AbstractFilter):
         for state in AbstractFilter.states(self, jam):
             for _ in range(self.n_samples):
                 state["btype"] = "high"
-                state["order"] = signal.cheb2ord(freq, freq-fs/10, 3, self.attenuation, fs=fs)
+                state["order"] = signal.cheb2ord(freq, freq-fs/10, 3, self.attenuation, fs=fs)[0]
                 state["attenuation"] = self.attenuation
                 state["cut_off"] = self._rng.normal(
                         loc=self.cutoff, scale=self.sigma, size=None
@@ -562,7 +562,7 @@ class RandomBPFilter(AbstractFilter):
                     )
                 state["btype"] = "bandpass"
                 state["cut_off"] = (low,high)
-                state["order"] = signal.cheb2ord([low,high], [low-fs/10,high+fs/10], 3, self.attenuation, fs=fs)
+                state["order"] = signal.cheb2ord([low,high], [low-fs/10,high+fs/10], 3, self.attenuation, fs=fs)[0]
                 state["attenuation"] = self.attenuation
                 
 
