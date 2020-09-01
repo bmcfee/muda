@@ -213,10 +213,10 @@ class Filter(AbstractFilter):
     >>> D = muda.deformers.Filter(btype,order,attenuation,cutoff)
     """
 
-    def __init__(self,btype="low",order=4, attenuation=60.0, cutoff=4000):
+    def __init__(self,btype="low", attenuation=60.0, cutoff=4000):
         AbstractFilter.__init__(self)
         self.btype = btype
-        self.order = order
+        #self.order = order
         self.attenuation = attenuation
         if self.btype == "bandpass":
             if isinstance(cutoff,tuple):
@@ -245,6 +245,8 @@ class Filter(AbstractFilter):
         
  
     def states(self, jam):
+        mudabox = jam.sandbox.muda
+        fs = mudabox._audio["sr"]
         for state in AbstractFilter.states(self, jam):
             if self.btype == "bandpass":
                 for low,high in self.cutoff:
@@ -252,7 +254,7 @@ class Filter(AbstractFilter):
                         raise ValueError("cutoff_low must be smaller than cutoff_high")
                     else:
                         state["cut_off"] = (low,high)
-                        state["order"] = self.order
+                        state["order"] = signal.cheb2ord([low,high], [low-fs/10,high+fs/10], 3, self.attenuation, fs=fs)
                         state["attenuation"] = self.attenuation
                         state["btype"] = self.btype
                         yield state
@@ -262,7 +264,7 @@ class Filter(AbstractFilter):
                         raise ValueError("cutoff frequency for lowpass filter must be strictly positive")
                     else:
                         state["cut_off"] = freq
-                        state["order"] = self.order
+                        state["order"] = signal.cheb2ord(freq, freq+fs/10, 3, self.attenuation, fs=fs)
                         state["attenuation"] = self.attenuation
                         state["btype"] = self.btype
                         yield state
@@ -272,7 +274,7 @@ class Filter(AbstractFilter):
                         raise ValueError("cutoff frequency for high pass filter must be strictly positive and smaller than nyquist frequency")
                     else:
                         state["cut_off"] = freq
-                        state["order"] = self.order
+                        state["order"] = signal.cheb2ord(freq, freq-fs/10, 3, self.attenuation, fs=fs)
                         state["attenuation"] = self.attenuation
                         state["btype"] = self.btype
                         yield state
@@ -326,7 +328,7 @@ class RandomLPFilter(AbstractFilter):
     >>> D = muda.deformers.RandomLPFilter(n_samples,order,attenuation,cutoff,sigma)
     """
 
-    def __init__(self, n_samples=3, order=4, attenuation=60.0, cutoff=8000,sigma=1.0,rng=0):
+    def __init__(self, n_samples=3, attenuation=60.0, cutoff=8000,sigma=1.0,rng=0):
         AbstractFilter.__init__(self)
         if sigma <= 0:
             raise ValueError("sigma must be strictly positive")
@@ -340,13 +342,13 @@ class RandomLPFilter(AbstractFilter):
         if isinstance(cutoff,list) and sum(np.array(cutoff)<=0)>0:
             raise ValueError("cutoff frequency must be None or positive")
 
-        if order <= 0 or attenuation <= 0:
-            raise ValueError("order and attenuation must be None or positive")
+        if attenuation <= 0:
+            raise ValueError("attenuation must be None or positive")
 
 
 
         self.n_samples = n_samples
-        self.order = order
+        #self.order = order
         self.attenuation = attenuation
         self.sigma = float(sigma)
         self.rng = rng
@@ -357,10 +359,12 @@ class RandomLPFilter(AbstractFilter):
 
     #specify and stores the type/parameters of the augmentation
     def states(self, jam):
+        mudabox = jam.sandbox.muda
+        fs = mudabox._audio["sr"] 
         for state in AbstractFilter.states(self, jam):
             for _ in range(self.n_samples):
                 state["btype"] = "low"
-                state["order"] = self.order
+                state["order"] =  signal.cheb2ord(freq, freq+fs/10, 3, self.attenuation, fs=fs)
                 state["attenuation"] = self.attenuation
                 state["cut_off"] = self._rng.normal(
                         loc=self.cutoff, scale=self.sigma, size=None
@@ -419,7 +423,7 @@ class RandomHPFilter(AbstractFilter):
     >>> D = muda.deformers.RandomHPFilter(m_samples,order,attenuation,cutoff,sigma)
     """
 
-    def __init__(self, n_samples=3, order=4, attenuation=60.0, cutoff=8000,sigma=1.0,rng=0):
+    def __init__(self, n_samples=3, attenuation=60.0, cutoff=8000,sigma=1.0,rng=0):
         AbstractFilter.__init__(self)
         if sigma <= 0:
             raise ValueError("sigma must be strictly positive")
@@ -427,15 +431,15 @@ class RandomHPFilter(AbstractFilter):
         if n_samples <= 0:
             raise ValueError("n_samples must be None or positive")
 
-        if order <= 0 or attenuation <= 0:
-            raise ValueError("order and attenuation must be None or positive")
+        if attenuation <= 0:
+            raise ValueError("attenuation must be None or positive")
 
         if isinstance(cutoff,list) or cutoff<=0:
             raise ValueError("high pass cutoff frequency must be strictly positive and lower than nyquist frequency")
 
 
         self.n_samples = n_samples
-        self.order = order
+        #self.order = order
         self.attenuation = attenuation
         self.sigma = float(sigma)
         self.rng = rng
@@ -450,7 +454,7 @@ class RandomHPFilter(AbstractFilter):
         for state in AbstractFilter.states(self, jam):
             for _ in range(self.n_samples):
                 state["btype"] = "high"
-                state["order"] = self.order
+                state["order"] = signal.cheb2ord(freq, freq-fs/10, 3, self.attenuation, fs=fs)
                 state["attenuation"] = self.attenuation
                 state["cut_off"] = self._rng.normal(
                         loc=self.cutoff, scale=self.sigma, size=None
@@ -510,16 +514,13 @@ class RandomBPFilter(AbstractFilter):
     >>> D = muda.deformers.RandomBPFilter(n_samples,order,attenuation,cutoff_low,cutoff_high,sigma)
     """
 
-    def __init__(self, n_samples=3, order=4, attenuation=60.0, cutoff_low=4000, cutoff_high=8000,sigma=1.0,rng=0):
+    def __init__(self, n_samples=3, attenuation=60.0, cutoff_low=4000, cutoff_high=8000,sigma=1.0,rng=0):
         AbstractFilter.__init__(self)
         if sigma is not None and sigma <= 0:
             raise ValueError("sigma must be strictly positive")
 
         if n_samples is not None and n_samples <= 0:
             raise ValueError("n_samples must be None or positive")
-
-        if order is not None and order <= 0:
-            raise ValueError("order must be None or positive")
 
         if attenuation is not None and attenuation <= 0:
             raise ValueError("attenuation must be None or positive")
@@ -530,7 +531,7 @@ class RandomBPFilter(AbstractFilter):
             raise ValueError("band pass cutoff frequency must be strictly greater than zero")
 
         self.n_samples = n_samples
-        self.order = order
+        #self.order = order
         self.attenuation = attenuation
         self.sigma = float(sigma)
         self.rng = rng
@@ -561,7 +562,7 @@ class RandomBPFilter(AbstractFilter):
                     )
                 state["btype"] = "bandpass"
                 state["cut_off"] = (low,high)
-                state["order"] = self.order
+                state["order"] = signal.cheb2ord([low,high], [low-fs/10,high+fs/10], 3, self.attenuation, fs=fs)
                 state["attenuation"] = self.attenuation
                 
 
