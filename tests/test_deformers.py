@@ -11,6 +11,8 @@ import jams
 import librosa
 
 import muda
+from scipy import fft
+from scipy import signal
 
 import pytest
 import scipy
@@ -20,7 +22,6 @@ from contextlib import contextmanager
 @contextmanager
 def does_not_raise():
     yield
-
 
 def ap_(a, b, msg=None, rtol=1e-5, atol=1e-5):
     """Shorthand for 'assert np.allclose(a, b, rtol, atol), "%r != %r" % (a, b)
@@ -35,6 +36,34 @@ def jam_fixture():
     return muda.load_jam_audio('tests/data/fixture.jams',
                                'tests/data/fixture.wav')
 
+@pytest.fixture(scope='module')
+def jam_mixture():
+    return muda.load_jam_audio('tests/data/mixture.jams',
+                               'tests/data/mixture.wav')
+
+
+@pytest.fixture(scope='module')
+def jam_impulse():
+    sr=22050
+    
+    impulse = np.zeros(round(1.5*sr))
+    impulse[len(impulse)//2]= 1.0
+
+    #make jam object for this audio - for testing purposes
+    freq_dict = {
+        50.0: [(0.0,0.6),(0.8,1.2)],
+        100.0: [(0.0,0.6),(1.0,1.1)],
+        400.0: [(0.0,0.9),(1.0,1.1)],
+        800.0: [(0.5,0.9),(1.2,1.5)],
+        1200.0: [(1.2,1.5)]
+    }
+
+    jam = make_jam(freq_dict,sr,1.5)
+    
+    if jam.file_metadata.duration is None:
+        jam.file_metadata.duration = 1.5
+
+    return muda.jam_pack(jam, _audio=dict(y=impulse, sr=sr))
 
 @pytest.fixture(scope='module')
 def jam_raw():
@@ -47,6 +76,55 @@ def test_raw(jam_raw):
     D = muda.deformers.TimeStretch(rate=2.0)
     six.next(D.transform(jam_raw))
 
+def make_jam(freq_dict,sr,track_duration):
+    """
+    this function creates a jam according to a dictionary that specifies 
+    each frequency's presence 
+
+    dict: keys are frequencies
+          values are list of tuples (start_time, duration) of that frequency
+    """
+    jam = jams.JAMS()
+
+    # Store the track duration
+    jam.file_metadata.duration = track_duration
+
+    pitch_co = jams.Annotation(namespace='pitch_contour')
+    note_h = jams.Annotation(namespace='note_hz')
+    note_m = jams.Annotation(namespace='note_midi')
+    pitch_cl = jams.Annotation(namespace='pitch_class')
+    pitch_h = jams.Annotation(namespace='pitch_hz')
+    pitch_m = jams.Annotation(namespace='pitch_midi')
+    
+    pitch_co.annotation_metadata = jams.AnnotationMetadata(data_source='synth')
+    note_h.annotation_metadata = jams.AnnotationMetadata(data_source='synth')
+    note_m.annotation_metadata = jams.AnnotationMetadata(data_source='synth')
+    pitch_cl.annotation_metadata = jams.AnnotationMetadata(data_source='synth')
+    pitch_h.annotation_metadata = jams.AnnotationMetadata(data_source='synth')
+    pitch_m.annotation_metadata = jams.AnnotationMetadata(data_source='synth')
+
+
+    #assign frequencies to each start_time
+    freqs = freq_dict.keys()
+    for f in freqs:
+        time_dur = freq_dict[f] #list of tuples (start_time,duration)
+        for t, dur in time_dur:
+            pitch_co.append(time=t, duration=dur, value={"index":0,"frequency":f,"voiced":True})
+            note_h.append(time=t, duration=dur,value=f)
+            note_m.append(time=t, duration=dur, value=librosa.hz_to_midi(f))
+            pclass = librosa.hz_to_note(f)
+            pitch_cl.append(time=t, duration=dur,value={"tonic":pclass[:-1],"pitch":int(pclass[-1])})
+            pitch_h.append(time=t, duration=dur,value=f)
+            pitch_m.append(time=t, duration=dur, value=librosa.hz_to_midi(f))
+    # Store the new annotation in the jam
+    jam.annotations.append(pitch_co)
+    jam.annotations.append(note_h)
+    jam.annotations.append(note_m)
+    jam.annotations.append(pitch_cl)
+    jam.annotations.append(pitch_h)
+    jam.annotations.append(pitch_m)
+
+    return jam
 
 """ Helper functions -- used across deformers """
 def __test_time(jam_orig, jam_new, rate):
@@ -768,7 +846,459 @@ def test_base_transformer():
 
     six.next(D.transform(jam_fixture))
 
+
+
+"""Deformer: Filtering"""
+# Helper function 
+
+def __test_tonic_filter(ann_orig, ann_new, cutoff):
+    # raise error if original note now out of range is still included in annotation 
+    for obs in ann_new:
+        v_new = librosa.note_to_hz(obs.value["tonic"]+str(obs.value['pitch']))
+        assert cutoff[0] < v_new < cutoff[1]
+
+    # ensure number of new annotations is less than or equal to the original  
+    assert len(ann_new) <= len(ann_orig)
+
+
+
+
+
+
+def __test_contour_filter(ann_orig, ann_new, cutoff):
+
+    for obs1,obs2 in zip(ann_orig,ann_new):
+        v_orig = obs1.value['frequency']
+        v_new = obs2.value['frequency']
+        if cutoff[0] < v_orig and cutoff[1] > v_orig:
+            ap_(v_orig,v_new)
+        else:
+            assert v_new == None
+
+
+
+
+
+def __test_hz_filter(ann_orig, ann_new, cutoff):
+
+    for obs in ann_new:
+        v_new = obs.value
+        assert cutoff[0] < v_new < cutoff[1]
+    assert len(ann_new) <= len(ann_orig)
+
+
+
+def __test_midi_filter(ann_orig, ann_new, cutoff):
+
+    for obs in ann_new:
+        v_new = librosa.midi_to_hz(obs.value)
+        assert cutoff[0] < v_new < cutoff[1]
+    assert len(ann_new) <= len(ann_orig)
+
+
+def __test_pitch_filter(jam_orig, jam_new, cutoff):
+
+
+    # Test each annotation
+    for ann_orig, ann_new in zip(jam_orig.annotations, jam_new.annotations):
+        #assert len(ann_orig) == len(ann_new)
+
     
+        if ann_orig.namespace == 'pitch_class':
+            __test_tonic_filter(ann_orig, ann_new, cutoff)
+        elif ann_orig.namespace == 'pitch_contour':
+            assert len(ann_orig) == len(ann_new)
+            __test_contour_filter(ann_orig, ann_new, cutoff)
+        elif ann_orig.namespace in ['pitch_hz','note_hz']:
+            __test_hz_filter(ann_orig, ann_new, cutoff)
+        elif ann_orig.namespace in ['pitch_midi','note_midi']:
+            __test_midi_filter(ann_orig, ann_new, cutoff)
+
+def __testsound(attenuation,cutoff_freq,audio_new,audio_orig,sr,btype):
+    #this attenuation should be the ultimate one
+    N = len(audio_orig)
+    T = 1.0 / sr
+    if btype == "bandpass":
+        low,high = cutoff_freq
+        
+    elif btype == "low":
+        low = 0
+        high = cutoff_freq
+    else:
+        low = cutoff_freq
+        high = sr/2
+    
+    #bin number of cutoff frequencies
+    idx_low = round(low // (sr/N)) # bin number of the passband
+    idx_high = round(high // (sr/N))
+    
+    yf_orig = fft(audio_orig)
+    yf_filt = fft(audio_new)
+    
+    #db of fft coefficients
+    db_orig = 20 * np.log10(2.0/N * np.abs(yf_orig))
+    db_filt = 20 * np.log10(2.0/N * np.abs(yf_filt))
+    
+    #check passband (if number of bins greater than threshold is equal)
+    
+    
+    if btype == "low":
+        stop_filt = db_filt[idx_high:N//2]
+        pass_filt = db_filt[:idx_low]
+        pass_orig = db_orig[:idx_low]
+        stop_orig = db_orig[idx_high:N//2]
+    elif btype == "high":
+        stop_filt = db_filt[:idx_low]
+        pass_filt = db_filt[idx_high:N//2]
+        pass_orig = db_orig[idx_high:N//2]
+        stop_orig = db_orig[:idx_low]
+    else:
+        stop_filt = np.array(list(db_filt[:idx_low]) + list(db_filt[idx_high:N//2]))
+        pass_filt = db_filt[idx_low:idx_high]
+        pass_orig = db_orig[idx_low:idx_high]
+        stop_orig = np.array(list(db_orig[:idx_low]) + list(db_orig[idx_high:N//2]))
+    
+    #check passband
+    assert sum(pass_orig > -attenuation) == sum(pass_filt > -attenuation)
+     
+    #check stopband
+    assert sum(stop_filt > -attenuation) == 0
+
+
+    
+#test filtering
+@pytest.mark.parametrize('btype,cutoff',
+                         [("high",20.0),
+                          ("high",100.0),
+                          ("high",500.0), 
+                          ("low",1000.0),
+                          ("low",500.0),
+                          ("low",[100.0,300.0,900.0]),
+                          ("bandpass",[(25.0,45.0),(30.0,500.0),(200.0,1000.0),(900.0,2000)]),
+                          ("bandpass",(1300,1500.0)),
+
+
+                        pytest.mark.xfail(("bandpass", [[40,100],[100,200,300]]), raises=ValueError),
+                        pytest.mark.xfail(("bandpass", [[100,40],[100,200]]), raises=ValueError),
+                        pytest.mark.xfail(("high", -50), raises=ValueError),
+                        pytest.mark.xfail(("low", 0.0), raises=ValueError),
+                        pytest.mark.xfail(("low", (20,100)), raises=ValueError),
+                        pytest.mark.xfail(("low", [(20,50),(40,100)]), raises=ValueError),
+                        pytest.mark.xfail(("bandpass", 1.0), raises=ValueError),
+                        pytest.mark.xfail(("bandpass", -30.0), raises=ValueError),
+                        pytest.mark.xfail(("bandpass", [40, 100]), raises=ValueError)
+                        ])
+
+
+@pytest.mark.parametrize('attenuation', #input is the ultimate one
+                         [10.0,30.0,80.0, 
+  
+                         pytest.mark.xfail(-20.0, raises=ValueError)
+                         ])
+
+            
+
+def test_filtering(btype, cutoff, jam_impulse,attenuation):
+   
+    D = muda.deformers.Filter(btype=btype, 
+                                order=4, 
+                                attenuation=attenuation,
+                                cutoff=cutoff)
+
+  
+    jam_orig = deepcopy(jam_impulse)
+  
+    
+    for jam_new in D.transform(jam_orig):
+        # Verify that the original jam reference hasn't changed
+        assert jam_new is not jam_orig
+        assert not np.allclose(jam_orig.sandbox.muda['_audio']['y'],
+                               jam_new.sandbox.muda['_audio']['y'])
+    
+        d_state = jam_new.sandbox.muda.history[-1]['state']
+        nyquist = d_state["nyquist"]
+        order = d_state['order']
+        atten = d_state['attenuation'] #this is the halfed one for the filter parameter
+
+        
+        if btype == "bandpass":
+            low,high = d_state['cut_off']
+        elif btype == "low": 
+            low = 0
+            high = d_state['cut_off']
+        else:
+            low = d_state['cut_off']
+            high = nyquist
+
+        
+        assert order > 0
+        assert isinstance(order,int)
+        assert atten > 0
+
+        if btype == "bandpass":
+            assert 0 < low < high < nyquist
+            
+        else:
+            assert 0 <= low < high <= nyquist
+           
+
+        __test_pitch_filter(jam_orig, jam_new, [low,high])
+
+        #test sound
+        __testsound(attenuation, #this is the ultimate one
+            d_state['cut_off'],
+            jam_new.sandbox.muda['_audio']['y'],
+            jam_orig.sandbox.muda['_audio']['y'],
+            jam_orig.sandbox.muda['_audio']['sr'],
+            btype)
+
+    # Serialization test
+    D2 = muda.deserialize(muda.serialize(D))
+    __test_params(D, D2)
+
+        
+#test random lowpass
+@pytest.mark.parametrize('cutoff',
+                         [50.0,100.0,400.0,1000.0,
+
+                         pytest.mark.xfail(-50.0, raises=ValueError),
+                         pytest.mark.xfail([0.0,-20], raises=ValueError),
+                         pytest.mark.xfail([(50.0,1000.0),(1000.0,2000.0)], raises=ValueError)
+                         ])
+
+
+
+@pytest.mark.parametrize('attenuation', #input is the ultimate one
+                         [10.0,30.0,80.0, 
+                        
+                         pytest.mark.xfail(-20.0, raises=ValueError)
+                         ])
+
+@pytest.mark.parametrize('n_samples', #input is the ultimate one
+                         [1,3,5, 
+                         pytest.mark.xfail(0, raises=ValueError),
+                         pytest.mark.xfail(-1, raises=ValueError)
+                         ])
+
+
+def test_randomlpfiltering(n_samples,cutoff, jam_impulse,attenuation):
+
+    D = muda.deformers.RandomLPFilter(n_samples=n_samples,
+                                         order=4, 
+                                         attenuation=attenuation, 
+                                         cutoff=cutoff,
+                                         sigma=1.0,
+                                         rng=0)
+
+    
+    jam_orig = deepcopy(jam_impulse)
+    orig_duration = librosa.get_duration(**jam_orig.sandbox.muda['_audio'])
+    
+    n_out = 0 
+    for jam_new in D.transform(jam_orig):
+        # Verify that the original jam reference hasn't changed
+        assert jam_new is not jam_orig
+
+        # Verify that the state and history objects are intact
+        __test_deformer_history(D, jam_new.sandbox.muda.history[-1])
+
+        d_state = jam_new.sandbox.muda.history[-1]['state']
+        nyquist = d_state["nyquist"]
+        low = 0
+        high = d_state['cut_off']
+        order = d_state['order']
+        atten = d_state['attenuation']
+
+        assert order > 0
+        assert isinstance(order,int)
+        assert atten > 0
+
+       
+        assert 0 <= high <= nyquist
+       
+        __test_pitch_filter(jam_orig, jam_new, [low,high])
+          #test sound
+        __testsound(attenuation,
+            d_state['cut_off'],
+            jam_new.sandbox.muda['_audio']['y'],
+            jam_orig.sandbox.muda['_audio']['y'],
+            jam_orig.sandbox.muda['_audio']['sr'],
+            "low")
+        n_out += 1
+
+    assert n_samples == n_out
+
+    # Serialization test
+    D2 = muda.deserialize(muda.serialize(D))
+    __test_params(D, D2)
+        
+
+
+@pytest.mark.parametrize('cutoff',
+                         [90.0,300.0,1000.0,1300.0,
+
+                         pytest.mark.xfail(-50, raises=ValueError),
+                         pytest.mark.xfail([10.0,70.0,700.0], raises=ValueError),
+                         pytest.mark.xfail([0.0,-20], raises=ValueError),
+                         pytest.mark.xfail([(50.0,1000.0),(1000.0,2000.0)], raises=ValueError)
+                         ])
+
+
+
+@pytest.mark.parametrize('attenuation', #input is the ultimate one
+                         [10.0,30.0,80.0, 
+                     
+                         pytest.mark.xfail(-20.0, raises=ValueError)
+                         ])
+
+@pytest.mark.parametrize('n_samples', #input is the ultimate one
+                         [1,3,5, 
+                         pytest.mark.xfail(0, raises=ValueError),
+                         pytest.mark.xfail(-1, raises=ValueError)
+                         ])
+
+def test_randomhpfiltering(cutoff, n_samples,jam_impulse,attenuation):
+    
+    D = muda.deformers.RandomHPFilter(n_samples=n_samples,
+                                         order=4, 
+                                         attenuation=attenuation, 
+                                         cutoff=cutoff,
+                                         sigma=1.0,
+                                         rng=0)
+
+  
+    jam_orig = deepcopy(jam_impulse)
+    orig_duration = librosa.get_duration(**jam_orig.sandbox.muda['_audio'])
+    
+    n_out = 0 
+    for jam_new in D.transform(jam_orig):
+        # Verify that the original jam reference hasn't changed
+        assert jam_new is not jam_orig
+
+
+        # Verify that the state and history objects are intact
+        __test_deformer_history(D, jam_new.sandbox.muda.history[-1])
+
+        d_state = jam_new.sandbox.muda.history[-1]['state']
+        nyquist = d_state["nyquist"]
+        low = d_state['cut_off']
+        high = nyquist
+       
+        order = d_state['order']
+        atten = d_state['attenuation']
+
+        assert order > 0
+        assert isinstance(order,int)
+        assert atten > 0
+
+       
+        assert 0 < low < nyquist
+
+        __test_pitch_filter(jam_orig, jam_new, [low,high])
+        #test sound
+        __testsound(attenuation,
+            d_state['cut_off'],
+            jam_new.sandbox.muda['_audio']['y'],
+            jam_orig.sandbox.muda['_audio']['y'],
+            jam_orig.sandbox.muda['_audio']['sr'],
+            "high")
+
+        n_out += 1
+
+    assert n_samples == n_out
+
+    # Serialization test
+    D2 = muda.deserialize(muda.serialize(D))
+    __test_params(D, D2)
+
+
+
+
+@pytest.mark.parametrize('cutoff',
+                         [(50.0,300.0),(900.0,1300.0),
+
+                         pytest.mark.xfail(-50, raises=ValueError),
+                         pytest.mark.xfail([700.0,600.0], raises=ValueError),
+                         pytest.mark.xfail([0.0,-20], raises=ValueError),
+                         pytest.mark.xfail([(50.0,1000.0),(1000.0,2000.0)], raises=ValueError)
+                         ])
+
+
+
+@pytest.mark.parametrize('attenuation', #input is the ultimate one
+                         [10.0,30.0,80.0, 
+                        
+                         pytest.mark.xfail(-20.0, raises=ValueError)
+                         ])
+
+@pytest.mark.parametrize('n_samples', #input is the ultimate one
+                         [1,3,5, 
+                         pytest.mark.xfail(0, raises=ValueError),
+                         pytest.mark.xfail(-1, raises=ValueError)
+                         ])
+
+
+def test_randombpfiltering(cutoff, n_samples, jam_impulse,attenuation):
+    if type(cutoff) != tuple:
+        raise ValueError("cut off frequency for random bandpass filter must be a tuple") 
+    else:
+         low,high = cutoff
+    
+    D = muda.deformers.RandomBPFilter(n_samples=n_samples,
+                                         order=4, 
+                                         attenuation=attenuation, 
+                                         cutoff_low=low,
+                                         cutoff_high = high,
+                                         sigma=1.0,
+                                         rng=0)
+
+  
+    jam_orig = deepcopy(jam_impulse)
+    orig_duration = librosa.get_duration(**jam_orig.sandbox.muda['_audio'])
+    
+    n_out = 0
+    for jam_new in D.transform(jam_orig):
+        # Verify that the original jam reference hasn't changed
+        assert jam_new is not jam_orig
+       
+
+        # Verify that the state and history objects are intact
+        __test_deformer_history(D, jam_new.sandbox.muda.history[-1])
+
+        d_state = jam_new.sandbox.muda.history[-1]['state']
+        low,high = d_state['cut_off']
+        nyquist = d_state["nyquist"]
+        order = d_state['order']
+        atten = d_state['attenuation']
+
+        assert order > 0
+        assert isinstance(order,int)
+        assert atten > 0
+
+        assert 0 < low < high < nyquist
+
+        __test_pitch_filter(jam_orig, jam_new, [low,high])
+          #test sound
+        __testsound(attenuation,
+            d_state['cut_off'],
+            jam_new.sandbox.muda['_audio']['y'],
+            jam_orig.sandbox.muda['_audio']['y'],
+            jam_orig.sandbox.muda['_audio']['sr'],
+            "bandpass")
+
+        n_out += 1
+
+    assert n_samples == n_out
+
+    # Serialization test
+    D2 = muda.deserialize(muda.serialize(D))
+    __test_params(D, D2)
+
+        
+
+
+
+
 """ Deformer: Clipping """
 # Helper function
 def __test_clipped_buffer(jam_orig, jam_new, clip_limit):
@@ -824,7 +1354,6 @@ def test_clipping(clip_limit, expectation, jam_fixture):
     D2 = muda.deserialize(muda.serialize(D))
     __test_params(D, D2)
 
-
 # LinearClipping
 @pytest.mark.parametrize('lower, upper',
                          [(0.3, 0.5), (0.1, 0.9),
@@ -869,7 +1398,6 @@ def test_linear_clipping(n_samples, lower, upper, jam_fixture):
     D2 = muda.deserialize(muda.serialize(D))
     __test_params(D, D2)
 
-
 # RandomClipping
 @pytest.mark.parametrize('a, b',
                          [(0.5, 0.5), (5.0, 1.0), (1.0, 3.0),
@@ -895,8 +1423,7 @@ def test_random_clipping(n_samples, a, b, jam_fixture):
     for jam_new in D.transform(jam_orig):
         # Verify that the original jam reference hasn't changed
         assert jam_new is not jam_orig
-        __test_time(jam_orig, jam_fixture, 1.0)
-
+       
         # Verify that the state and history objects are intact
         __test_deformer_history(D, jam_new.sandbox.muda.history[-1])
 
@@ -912,3 +1439,5 @@ def test_random_clipping(n_samples, a, b, jam_fixture):
     # Serialization test
     D2 = muda.deserialize(muda.serialize(D))
     __test_params(D, D2)
+
+
