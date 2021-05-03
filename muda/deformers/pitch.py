@@ -44,7 +44,7 @@ def transpose(label, n_semitones):
     note = match.group("note")
 
     new_note = librosa.midi_to_note(
-        librosa.note_to_midi(note) + n_semitones, octave=False
+        librosa.note_to_midi(note) + n_semitones, octave=False, unicode=False
     )
 
     return new_note + match.group("mod")

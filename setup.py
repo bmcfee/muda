@@ -32,7 +32,7 @@ setup(
     keywords='audio music sound',
     license='ISC',
     install_requires=[
-        'librosa>=0.4',
+        'librosa>=0.8',
         'pyrubberband>=0.1',
         'pandas',
         'jams>=0.3.0',
